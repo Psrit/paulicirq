@@ -1,0 +1,4 @@
+cirq==0.5.0
+ddt==1.2.2
+openfermion==0.10.0
+mpmath
