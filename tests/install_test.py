@@ -10,6 +10,11 @@ tests_root = os.path.dirname(os.path.abspath(__file__))
 distribution_root = os.path.dirname(tests_root)
 
 
+class VirtualEnvWrapperNotFoundError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+
 def random_sha1_by_time(length=9):
     import hashlib
     import datetime
@@ -60,19 +65,30 @@ def install_test(package_path, python):
         python_version,
         hash_6
     )
-    tests = os.sep.join([distribution_root, "tests_{}".format(hash_6)])
+    tests_dir = os.sep.join([distribution_root, "tests_{}".format(hash_6)])
+    os.makedirs(tests_dir, exist_ok=False)
+    tests = os.sep.join([tests_dir, "tests"])
 
     # Copy tests
 
     shutil.copytree(tests_root, tests)
-    tests = shutil.move(tests, tests_root)
-    print("[ Test files copied to {}. ]".format(tests))
+    print("[ Test files copied to \"{}\". ]".format(tests))
+
+    # Change current working directory
+
+    _cwd = os.getcwd()
+    os.chdir(tests_dir)
+    print("[ Change current working directory to: {} ]"
+          .format(os.getcwd()))
 
     # Get the path of virtualenvwrapper.sh
 
-    status, output = subprocess.getstatusoutput(
-        " ".join(["which", "virtualenvwrapper.sh"])
-    )
+    output = shutil.which("virtualenvwrapper.sh")
+    if output is None:
+        raise VirtualEnvWrapperNotFoundError(
+            msg="virtualenvwrapper is required for the installation test."
+        )
+
     vew_script = output
 
     # Command series
@@ -92,8 +108,6 @@ def install_test(package_path, python):
          .format(vew_script, virtual_env),
          "-m", "pip", "list"),
 
-        ("cd", tests_root),
-
         ("source {} && workon {} && python"
          .format(vew_script, virtual_env),
          "-m", os.path.basename(tests)),
@@ -101,6 +115,11 @@ def install_test(package_path, python):
         ("source {} && rmvirtualenv".format(vew_script),
          virtual_env)
     ]
+
+    def _clean():
+        os.chdir(_cwd)
+        shutil.rmtree(tests_dir)
+        print("[ Temporary test directory {} removed. ]".format(tests_dir))
 
     for cmd in command_series:
         cmd_str = " ".join(cmd)
@@ -112,12 +131,11 @@ def install_test(package_path, python):
             status = execute_and_print(rm_env)
             if status == 0:
                 print("[ {} executed successfully. ]".format(rm_env))
-            shutil.rmtree(tests)
-            print("[ Temporary test directory {} removed. ]".format(tests))
+
+            _clean()
             return
 
-    print("[ Temporary test directory {} removed. ]".format(tests))
-    shutil.rmtree(tests)
+    _clean()
 
 
 if __name__ == "__main__":
