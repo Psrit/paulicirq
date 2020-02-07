@@ -38,7 +38,7 @@ class HadamardTest(unittest.TestCase):
         )
         print("Circuit for estimating the real part:\n"
               "{}\n".format(circuit_re))
-        result_re = cirq.Simulator().run(circuit_re, repetitions=100000)
+        result_re = cirq.Simulator().run(circuit_re, repetitions=2000000)
         inner_product_simulator_re = \
             inner_product_from_hadamard_test_result(result_re,
                                                     hadamard_measurement_key_re,
@@ -55,7 +55,7 @@ class HadamardTest(unittest.TestCase):
         )
         print("Circuit for estimating the imaginary part:\n"
               "{}\n".format(circuit_im))
-        result_im = cirq.Simulator().run(circuit_im, repetitions=100000)
+        result_im = cirq.Simulator().run(circuit_im, repetitions=2000000)
         inner_product_simulator_im = \
             inner_product_from_hadamard_test_result(result_im,
                                                     hadamard_measurement_key_im,

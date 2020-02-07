@@ -64,7 +64,7 @@ class SWAPTestGateTestOnTwoQubits(unittest.TestCase):
 
         print(self.circuit)
 
-        result = self.simulator.run(self.circuit, repetitions=2000)
+        result = self.simulator.run(self.circuit, repetitions=20000)
         count = result.histogram(key=measurement)
         print(count)
         self.assertTrue(math.isclose(count[0], count[1], rel_tol=0.10))
@@ -128,7 +128,7 @@ class SWAPTestGateTestOnTwoStates(unittest.TestCase):
 
         print(self.circuit)
 
-        result = self.simulator.run(self.circuit, repetitions=10)
+        result = self.simulator.run(self.circuit, repetitions=100)
         print(result)
         self.assertTrue(np.any(result.measurements[measurement] == 1))
 
@@ -146,7 +146,7 @@ class SWAPTestGateTestOnTwoStates(unittest.TestCase):
 
         print(self.circuit)
 
-        result = self.simulator.run(self.circuit, repetitions=2000)
+        result = self.simulator.run(self.circuit, repetitions=20000)
         count = result.histogram(key=measurement)
         print(count)
         self.assertTrue(math.isclose(count[0], count[1], rel_tol=0.10))
