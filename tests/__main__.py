@@ -21,8 +21,14 @@ def main():
         failed, errored = len(result.failures), len(result.errors)
         if failed:
             print("failures=%d" % failed)
+            for i, (failure, info) in enumerate(result.failures):
+                print("({}/{}) {}".format(i + 1, failed, failure))
+                print(info)
         if errored:
             print("errors=%d" % errored)
+            for i, (error, info) in enumerate(result.errors):
+                print("({}/{}) {}".format(i + 1, errored, error))
+                print(info)
     else:
         print("OK")
 
