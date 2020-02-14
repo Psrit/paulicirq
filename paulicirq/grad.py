@@ -255,7 +255,7 @@ def op_tree_generator_grad(
         def _deriv_op_generator_wrapper(_i):  # enclosure wrapper
 
             class _DerivOpTreeGenerator(type(op_tree_generator)):
-                def __call__(self, _qubits) -> typing.Tuple[cirq.Operation]:
+                def __call__(self, _qubits, **kwargs) -> typing.Tuple[cirq.Operation]:
                     op = list(_op_generator_grad(_qubits))[_i]
                     return op
 
