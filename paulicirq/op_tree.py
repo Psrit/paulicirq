@@ -48,10 +48,57 @@ class OpTreeGenerator(object):
 
                 return _resolved_op_tree
 
+            def params(self):
+                return ()
+
         _resolved_generator = copy.deepcopy(self)
         _resolved_generator.__class__ = _ParamResolvedGenerator
 
         return _resolved_generator
+
+    @staticmethod
+    def join(
+            generator1: "OpTreeGenerator",
+            generator2: "OpTreeGenerator"
+    ) -> "OpTreeGenerator":
+        if generator1.num_qubits != generator2.num_qubits:
+            raise ValueError(
+                "`num_qubits` of the given two generators must equal, "
+                "but {} != {}."
+                .format(generator1.num_qubits, generator2.num_qubits)
+            )
+
+        kwargs1 = generator1._kwargs
+        kwargs2 = generator2._kwargs
+        for key in set.intersection(
+            set(kwargs1.keys()), set(kwargs2.keys())
+        ):
+            if kwargs1[key] != kwargs2[key]:
+                raise ValueError(
+                    "Common keyword argument found in the given generators, "
+                    "but the argument values don't equal: {} != {}."
+                    .format(kwargs1[key], kwargs2[key])
+                )
+
+        kwargs = copy.deepcopy(kwargs1)
+        kwargs.update(kwargs2)
+
+        class _JoinedGenerator(type(generator1)):
+            def __call__(
+                    self,
+                    qubits: typing.Iterable[cirq.Qid],
+                    **kwargs
+            ) -> cirq.OP_TREE:
+                yield generator1(qubits, **kwargs)
+                yield generator2(qubits, **kwargs)
+
+            def params(self) -> typing.Iterable[sympy.Symbol]:
+                params1 = set(generator1.params())
+                params2 = set(generator2.params())
+                return params1.union(params2)
+
+        kwargs = generator1._kwargs
+        return _JoinedGenerator(**kwargs)
 
 
 class VariableNQubitsGenerator(OpTreeGenerator, metaclass=ABCMeta):
