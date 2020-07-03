@@ -152,3 +152,28 @@ def resolve_scalar(c, param_resolver: cirq.ParamResolverOrSimilarType):
         _c_resolved = complex(c)
 
     return _c_resolved
+
+
+def deduplicate(sequence: typing.Sequence):
+    """
+    Remove repeated terms in `sequence` with the original order preserved.
+
+    :param sequence:
+        The sequence to be processed.
+    :return:
+        The processed sequence.
+
+    """
+    sequence_type = type(sequence)
+
+    _set = set()
+    _list = list(sequence)
+    _deduplicated = []
+
+    for term in _list:
+        if term not in _set:
+            _deduplicated.append(term)
+            _set.add(term)
+
+    _deduplicated = sequence_type(_deduplicated)
+    return _deduplicated
