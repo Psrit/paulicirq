@@ -1,5 +1,7 @@
 import unittest
 
+import ddt
+
 from paulicirq.pauli import PauliWord
 from paulicirq.utils import *
 
@@ -45,3 +47,15 @@ class PauliExpansionTest(unittest.TestCase):
             _matrix += coeff * PauliWord(term).sparray.toarray()
 
         self.assertTrue(np.allclose(_matrix, matrix))
+
+
+@ddt.ddt
+class DeduplicateTest(unittest.TestCase):
+    @ddt.unpack
+    @ddt.data(
+        ((1, 2, 3, 2, 5), (1, 2, 3, 5)),
+        ([1, 2, 3, 2, 5], [1, 2, 3, 5]),
+    )
+    def test_iterables(self, original, expected_deduplicated):
+        deduplicated = deduplicate(original)
+        self.assertEqual(deduplicated, expected_deduplicated)
