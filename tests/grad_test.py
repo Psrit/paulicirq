@@ -5,22 +5,41 @@ import cirq
 import ddt
 import numpy as np
 import sympy
-from cirq import Rx, H, Rz, X, Z, Y, ControlledGate, XPowGate
+from cirq import Rx, H, Rz, X, Z, Y, ControlledGate, XPowGate, Ry, IdentityGate
 
 from paulicirq.gates import TwoPauliExpGate, GlobalPhaseGate, PauliWordExpGate
 # from paulicirq.gates.controlled_gates import CRz, CRx
 from paulicirq.gates.gate_block import GateBlock
-from paulicirq.grad import op_grad, GradNotImplemented
-from paulicirq.linear_combinations import LinearCombinationOfOperations as LCO
+from paulicirq.grad import op_grad, GradNotImplemented, op_tree_generator_grad
+from paulicirq.linear_combinations import LinearCombinationOfOperations as LCO, LinearCombinationOfOperations
 from paulicirq.op_tree import OpTreeGenerator, VariableNQubitsGenerator
 from paulicirq.pauli import PauliWord
 from tests.utils import test_lco_identical_with_simulator
 
 q0, q1, q2, q3, q4 = cirq.LineQubit.range(5)
 rad = sympy.Symbol("rad")
+c = sympy.Symbol("c")
 
 
-class _2rots_op_generator(OpTreeGenerator):
+class OneRotGenerator(OpTreeGenerator):
+    def __init__(self):
+        super().__init__()
+        self._num_qubits = 2
+
+    @property
+    def num_qubits(self):
+        return self._num_qubits
+
+    def params(self) -> typing.Iterable[sympy.Symbol]:
+        return [rad, c]
+
+    def __call__(self, qubits, **kwargs):
+        q0 = qubits[0]
+        yield Ry(c * rad).on(q0)
+        yield IdentityGate(1).on(q1)
+
+
+class TwoRotsGenerator(OpTreeGenerator):
     def __init__(self):
         super().__init__()
         self._num_qubits = 2
@@ -32,14 +51,14 @@ class _2rots_op_generator(OpTreeGenerator):
     def params(self) -> typing.Iterable[sympy.Symbol]:
         return [rad]
 
-    def __call__(self, qubits):
+    def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
         yield Rx(rad).on(q0)
         yield Rz(rad).on(q1)
 
 
-class _op_generator_3posargs_and_1varg(VariableNQubitsGenerator):
-    def __call__(self, qubits):
+class ThreePosargsAndOneVargGenerator(VariableNQubitsGenerator):
+    def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
         yield Rx(rad).on(q0)
         yield ControlledGate(Rz(rad)).on(q0, q1)
@@ -55,12 +74,12 @@ class _op_generator_3posargs_and_1varg(VariableNQubitsGenerator):
 
 
 u = GateBlock(
-    _op_generator_3posargs_and_1varg(5)
+    ThreePosargsAndOneVargGenerator(5)
 )
 
 
-class _u_positive_generator(VariableNQubitsGenerator):
-    def __call__(self, qubits):
+class UPositiveGenerator(VariableNQubitsGenerator):
+    def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
         yield Rx(rad).on(q0)
         yield ControlledGate(Z).on(q0, q1)
@@ -76,11 +95,11 @@ class _u_positive_generator(VariableNQubitsGenerator):
         return [rad]
 
 
-u_positive = GateBlock(_u_positive_generator(5))
+u_positive = GateBlock(UPositiveGenerator(5))
 
 
-class _u_negative_generator(VariableNQubitsGenerator):
-    def __call__(self, qubits):
+class UNegativeGenerator(VariableNQubitsGenerator):
+    def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
         yield Rx(rad).on(q0)
         yield ControlledGate(GlobalPhaseGate(1)).on(q0, q1)
@@ -97,7 +116,7 @@ class _u_negative_generator(VariableNQubitsGenerator):
         return [rad]
 
 
-u_negative = GateBlock(_u_negative_generator(5))
+u_negative = GateBlock(UNegativeGenerator(5))
 
 
 @ddt.ddt
@@ -145,7 +164,7 @@ class OperationGradTest(unittest.TestCase):
         # d[Rx(rad) ⊗ Rz(rad)] / d[rad] = -i/2 { X Rx(rad) ⊗ Rz(rad)
         #                                      + Rx(rad) ⊗ Z Rz(rad) }
         [GateBlock(
-            _2rots_op_generator()
+            TwoRotsGenerator()
         ).on(q0, q1), rad,
          -0.5j * LCO({
              (Rz(rad).on(q1), Rx(rad).on(q0), X(q0)): 1,
@@ -208,5 +227,65 @@ class OperationGradTest(unittest.TestCase):
         test_lco_identical_with_simulator(
             cirq.resolve_parameters(grad, param_resolver),
             cirq.resolve_parameters(grad_lco, param_resolver),
+            self
+        )
+
+
+class OpTreeGeneratorGradTest(unittest.TestCase):
+    def test_simple_generator(self):
+        generator = TwoRotsGenerator()
+        grad_lcg = op_tree_generator_grad(generator, rad)
+        grad_lco = LinearCombinationOfOperations({
+            _generator((q0, q1)): _coeff for _generator, _coeff in grad_lcg.items()
+        })
+
+        exact_grad_lco = LinearCombinationOfOperations({
+            (X(q0), Rx(rad).on(q0), Rz(rad).on(q1)): -0.5j,
+            (Rx(rad).on(q0), Z(q1), Rz(rad).on(q1)): -0.5j
+        })
+
+        param_resolver = {rad: np.random.rand() * 4 * np.pi}
+
+        grad_lco = cirq.resolve_parameters(grad_lco, param_resolver)
+        exact_grad_lco = cirq.resolve_parameters(exact_grad_lco, param_resolver)
+
+        test_lco_identical_with_simulator(
+            grad_lco,
+            exact_grad_lco,
+            self
+        )
+
+    def test_joined_generator(self):
+        generator1 = TwoRotsGenerator()
+
+        generator2 = OneRotGenerator()
+        grad = op_tree_generator_grad(
+            OpTreeGenerator.join(generator1, generator2),
+            rad
+        )
+        grad_lco = LinearCombinationOfOperations({
+            _generator((q0, q1)): _coeff for _generator, _coeff in grad.items()
+        })
+
+        for _generator, _coeff in grad.items():
+            print(_generator.diagram(), _coeff)
+
+        exact_grad_lco = LinearCombinationOfOperations({
+            (X(q0), Rx(rad).on(q0), Rz(rad).on(q1), Ry(c * rad).on(q0)): -0.5j,
+            (Rx(rad).on(q0), Z(q1), Rz(rad).on(q1), Ry(c * rad).on(q0)): -0.5j,
+            (Rx(rad).on(q0), Rz(rad).on(q1), Y(q0), Ry(c * rad).on(q0)): -0.5j * c,
+        })
+
+        param_resolver = {
+            rad: np.random.rand() * 4 * np.pi,
+            c: np.random.rand()
+        }
+
+        grad_lco = cirq.resolve_parameters(grad_lco, param_resolver)
+        exact_grad_lco = cirq.resolve_parameters(exact_grad_lco, param_resolver)
+
+        test_lco_identical_with_simulator(
+            grad_lco,
+            exact_grad_lco,
             self
         )
