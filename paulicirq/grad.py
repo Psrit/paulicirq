@@ -202,7 +202,7 @@ def op_grad(
 
 
 def op_series_grad(
-        op_series: typing.Sequence[cirq.Operation],
+        op_series: typing.List[cirq.Operation],
         parameter: sympy.Symbol
 ) -> typing.Union[LinearCombinationOfOperations, GradNotImplemented]:
     grad_dict = LinearCombinationOfOperations({})
