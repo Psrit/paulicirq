@@ -230,13 +230,13 @@ def op_series_grad(
 def op_tree_generator_grad(
         op_tree_generator: OpTreeGenerator,
         parameter: sympy.Symbol,
-        **generator_kwargs
+        **generator_call_kwargs
 ) -> typing.Union[LinearSymbolicDict[OpTreeGenerator], GradNotImplemented]:
     num_qubits = op_tree_generator.num_qubits
 
     def _op_generator_grad(_qubits):
         op_list = flatten_op_tree(
-            op_tree_generator(_qubits, **generator_kwargs),
+            op_tree_generator(_qubits, **generator_call_kwargs),
             preserve_moments=False
         )  # type: typing.Iterable[cirq.Operation]
         return op_series_grad(list(op_list), parameter)
