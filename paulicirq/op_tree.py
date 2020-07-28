@@ -1,12 +1,16 @@
+import collections
 import copy
+import typing
 from abc import abstractmethod, ABCMeta
 
 import cirq
-import typing
-
+import numpy as np
 import sympy
 
+from paulicirq.linear_combinations import LinearSymbolicDict
 
+
+@cirq.value.value_equality(distinct_child_types=True)
 class OpTreeGenerator(object):
     def __init__(self, **kwargs):
         self._kwargs = kwargs
@@ -18,9 +22,9 @@ class OpTreeGenerator(object):
 
     @abstractmethod
     def __call__(
-            self,
-            qubits: typing.Iterable[cirq.Qid],
-            **kwargs
+        self,
+        qubits: typing.Sequence[cirq.Qid],
+        **kwargs
     ) -> cirq.OP_TREE:
         pass
 
@@ -56,10 +60,22 @@ class OpTreeGenerator(object):
 
         return _resolved_generator
 
+    def _value_equality_values_(self):
+        return id(self)
+
+    def diagram(self, **call_kwargs) -> str:
+        qubits = [
+            cirq.NamedQubit("qubit {}".format(i)) for i in range(self.num_qubits)
+        ]
+        circuit = cirq.Circuit()
+        circuit.append(self.__call__(qubits, **call_kwargs))
+
+        return str(circuit)
+
     @staticmethod
     def join(
-            generator1: "OpTreeGenerator",
-            generator2: "OpTreeGenerator"
+        generator1: "OpTreeGenerator",
+        generator2: "OpTreeGenerator"
     ) -> "OpTreeGenerator":
         if generator1.num_qubits != generator2.num_qubits:
             raise ValueError(
@@ -85,20 +101,19 @@ class OpTreeGenerator(object):
 
         class _JoinedGenerator(type(generator1)):
             def __call__(
-                    self,
-                    qubits: typing.Iterable[cirq.Qid],
-                    **kwargs
+                self,
+                qubits: typing.Iterable[cirq.Qid],
+                **call_kwargs
             ) -> cirq.OP_TREE:
-                yield generator1(qubits, **kwargs)
-                yield generator2(qubits, **kwargs)
+                yield generator1(qubits, **call_kwargs)
+                yield generator2(qubits, **call_kwargs)
 
             def params(self) -> typing.Iterable[sympy.Symbol]:
                 params1 = set(generator1.params())
                 params2 = set(generator2.params())
                 return params1.union(params2)
 
-        kwargs = generator1._kwargs
-        return _JoinedGenerator(**kwargs)
+        return _JoinedGenerator(**kwargs1)
 
 
 class VariableNQubitsGenerator(OpTreeGenerator, metaclass=ABCMeta):
@@ -109,3 +124,53 @@ class VariableNQubitsGenerator(OpTreeGenerator, metaclass=ABCMeta):
     @property
     def num_qubits(self):
         return self._num_qubits
+
+
+def simulate_generator(
+    generator: OpTreeGenerator,
+    generator_call_kwargs: dict,
+    param_resolver: typing.Optional[cirq.ParamResolverOrSimilarType],
+    qubit_order=cirq.ops.QubitOrder.DEFAULT,
+    initial_state=None
+) -> cirq.SimulationTrialResult:
+    qubits = cirq.LineQubit.range(generator.num_qubits)
+    circuit = cirq.Circuit()
+    circuit.append(
+        generator(
+            qubits,
+            **generator_call_kwargs
+        )
+    )
+    simulator = cirq.Simulator(dtype=np.complex128)
+    result = simulator.simulate(
+        circuit, param_resolver,
+        qubit_order, initial_state
+    )
+
+    return result
+
+
+def lcg_grad(
+    lcg: typing.OrderedDict[OpTreeGenerator, sympy.Basic],
+    parameter: sympy.Symbol,
+    generator_call_kwargs=None
+) -> typing.OrderedDict[OpTreeGenerator, sympy.Basic]:
+    from paulicirq.grad import op_tree_generator_grad
+    if generator_call_kwargs is None:
+        generator_call_kwargs = {}
+
+    grad_dict = LinearSymbolicDict({})
+
+    for _generator, _coeff in lcg.items():
+        grad_dict += LinearSymbolicDict({
+            _generator: sympy.diff(_coeff, parameter)
+        })
+
+        for _grad_generator, _grad_coeff in op_tree_generator_grad(
+            _generator, parameter, **generator_call_kwargs
+        ).items():
+            grad_dict += LinearSymbolicDict({
+                _grad_generator: _coeff * _grad_coeff
+            })
+
+    return collections.OrderedDict(grad_dict)
