@@ -32,6 +32,10 @@ def get_all_measurement_keys(circuit: cirq.Circuit) -> set:
 
 
 def get_all_line_qubit_ids(circuit: cirq.Circuit) -> tuple:
+    """
+    Return IDs of all LineQubits in `circuit` in order.
+
+    """
     all_line_qubit_ids = set()
 
     for qubit in circuit.all_qubits():
@@ -42,6 +46,17 @@ def get_all_line_qubit_ids(circuit: cirq.Circuit) -> tuple:
 
 
 def generate_auxiliary_qubit(circuit: cirq.Circuit) -> cirq.LineQubit:
+    """
+    Generate an auxiliary qubit in `circuit`.
+
+    :param circuit:
+        The target circuit.
+    :return:
+        The generated auxiliary qubit, which is a LineQubit, and whose ID number
+        is greater than the ones of all existing LineQubits in `circuit` and is
+        also greater than 999.
+
+    """
     existed_ids = get_all_line_qubit_ids(circuit)
     if len(existed_ids) == 0:  # if there is no qubit existed in the circuit:
         max_id = 1
