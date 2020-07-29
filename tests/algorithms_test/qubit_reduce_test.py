@@ -97,7 +97,7 @@ class TestQubitReduction(unittest.TestCase):
         #   11,     11,     11,     11]
         eig = np.linalg.eigvalsh(
             openfermion.get_sparse_operator(qubit_op)
-                .toarray()
+            .toarray()
         )
 
         # e.g.
@@ -107,14 +107,14 @@ class TestQubitReduction(unittest.TestCase):
         #   11,     11]
         eig_inactive_qubits_reduced = np.linalg.eigvalsh(
             openfermion.get_sparse_operator(inactive_qubits_reduced_qubit_op)
-                .toarray()
+            .toarray()
         )
 
         # Note that `inactivate_stationary_qubits` won't reduce the dimension of
         # the multi-qubit space of the qubit operator.
         eig_stationary_qubits_inactivated = np.linalg.eigvalsh(
             openfermion.get_sparse_operator(stationary_qubits_inactivated_qubit_op)
-                .toarray()
+            .toarray()
         )
 
         # e.g.
@@ -124,7 +124,7 @@ class TestQubitReduction(unittest.TestCase):
         #   11]
         eig_reduced = np.linalg.eigvalsh(
             openfermion.get_sparse_operator(reduced_qubit_op)
-                .toarray()
+            .toarray()
         )
 
         self.assertTrue(np.allclose(
