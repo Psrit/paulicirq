@@ -102,7 +102,7 @@ class OpTreeGenerator(object):
         class _JoinedGenerator(type(generator1)):
             def __call__(
                 self,
-                qubits: typing.Iterable[cirq.Qid],
+                qubits: typing.Sequence[cirq.Qid],
                 **call_kwargs
             ) -> cirq.OP_TREE:
                 yield generator1(qubits, **call_kwargs)

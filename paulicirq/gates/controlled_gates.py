@@ -14,11 +14,11 @@ class Controlled1BitMatrixGate(cirq.ControlledGate):
     def __init__(
             self,
             sub_gate: typing.Union[
-                cirq.SingleQubitMatrixGate, np.ndarray
+                cirq.MatrixGate, np.ndarray
             ]
     ):
         if isinstance(sub_gate, np.ndarray):
-            sub_gate = cirq.SingleQubitMatrixGate(sub_gate)
+            sub_gate = cirq.MatrixGate(sub_gate, qid_shape=(2,))
 
         if not cirq.has_unitary(sub_gate):
             raise ValueError("Cannot get unitary from {}".format(sub_gate))
@@ -80,24 +80,24 @@ class Controlled1BitMatrixGate(cirq.ControlledGate):
             #     assert is_complex_close(b, b_evaluated, atol=1e-9)
 
         # Gate C
-        yield cirq.Rz((delta - beta) / 2.0).on(target)
+        yield cirq.rz((delta - beta) / 2.0).on(target)
 
         # Gate CNOT
         yield cirq.CNOT(control=control, target=target)
 
         # Gate B
-        yield cirq.Rz(-(delta + beta) / 2.0).on(target)
-        yield cirq.Ry(-gamma / 2.0).on(target)
+        yield cirq.rz(-(delta + beta) / 2.0).on(target)
+        yield cirq.ry(-gamma / 2.0).on(target)
 
         # Gate CNOT
         yield cirq.CNOT(control=control, target=target)
 
         # Gate A
-        yield cirq.Ry(gamma / 2.0).on(target)
-        yield cirq.Rz(beta).on(target)
+        yield cirq.ry(gamma / 2.0).on(target)
+        yield cirq.rz(beta).on(target)
 
         # Gate Phase
-        yield cirq.Rz(alpha).on(control)
+        yield cirq.rz(alpha).on(control)
         yield GlobalPhaseGate(alpha / (2.0 * np.pi)).on(control)
 
     def on(self, control, target):
@@ -109,7 +109,6 @@ class ControlledEigenGate(cirq.ControlledGate, cirq.EigenGate):
     def __init__(
             self,
             sub_gate: cirq.EigenGate,
-            control_qubits: typing.Sequence[cirq.Qid] = None,
             num_controls: int = None,
             global_shift: float = 0.0,
             exponent: float = 1.0
@@ -119,7 +118,6 @@ class ControlledEigenGate(cirq.ControlledGate, cirq.EigenGate):
 
         super(ControlledEigenGate, self).__init__(
             sub_gate=sub_gate,
-            control_qubits=control_qubits,
             num_controls=num_controls
         )  # Equiv. to ControlledGate.__init__(...)
 
@@ -192,18 +190,18 @@ class CRx(ControlledEigenGate):
 
     def __init__(self, rads):
         self.rads = rads
-        super().__init__(sub_gate=cirq.Rx(rads),
+        super().__init__(sub_gate=cirq.rx(rads),
                          num_controls=1)
 
     def _decompose_(self, qubits):
         control, target = qubits
 
-        yield cirq.Rz(np.pi / 2.0).on(target)
+        yield cirq.rz(np.pi / 2.0).on(target)
         yield cirq.CNOT(control=control, target=target)
-        yield cirq.Ry(-self.rads / 2.0).on(target)
+        yield cirq.ry(-self.rads / 2.0).on(target)
         yield cirq.CNOT(control=control, target=target)
-        yield cirq.Ry(self.rads / 2.0).on(target)
-        yield cirq.Rz(-np.pi / 2.0).on(target)
+        yield cirq.ry(self.rads / 2.0).on(target)
+        yield cirq.rz(-np.pi / 2.0).on(target)
 
     def on(self, control, target):
         return cirq.GateOperation(self, [control, target])
@@ -225,16 +223,16 @@ class CRy(ControlledEigenGate):
 
     def __init__(self, rads):
         self.rads = rads
-        super().__init__(sub_gate=cirq.Ry(rads),
+        super().__init__(sub_gate=cirq.ry(rads),
                          num_controls=1)
 
     def _decompose_(self, qubits):
         control, target = qubits
 
         yield cirq.CNOT(control=control, target=target)
-        yield cirq.Ry(-self.rads / 2.0).on(target)
+        yield cirq.ry(-self.rads / 2.0).on(target)
         yield cirq.CNOT(control=control, target=target)
-        yield cirq.Ry(self.rads / 2.0).on(target)
+        yield cirq.ry(self.rads / 2.0).on(target)
 
     def on(self, control, target):
         return cirq.GateOperation(self, [control, target])
@@ -256,15 +254,15 @@ class CRz(ControlledEigenGate):
 
     def __init__(self, rads):
         self.rads = rads
-        super().__init__(sub_gate=cirq.Rz(rads),
+        super().__init__(sub_gate=cirq.rz(rads),
                          num_controls=1)
 
     def _decompose_(self, qubits):
         control, target = qubits
 
-        yield cirq.Rz(self.rads / 2.0).on(target)
+        yield cirq.rz(self.rads / 2.0).on(target)
         yield cirq.CNOT(control=control, target=target)
-        yield cirq.Rz(-self.rads / 2.0).on(target)
+        yield cirq.rz(-self.rads / 2.0).on(target)
         yield cirq.CNOT(control=control, target=target)
 
     def on(self, control, target):

@@ -1,5 +1,5 @@
 import cirq
-from cirq.protocols.decompose import _default_decomposer
+from cirq.protocols import decompose_once
 
 from paulicirq.gates import GlobalPhaseGate
 
@@ -29,7 +29,7 @@ def is_a_basic_operation(operation: cirq.GateOperation) -> bool:
 
 
 def is_an_indecomposable_operation(operation: cirq.GateOperation) -> bool:
-    if _default_decomposer(operation) is not NotImplemented:
+    if decompose_once(operation, default=NotImplemented) is not NotImplemented:
         return False
 
     # TODO: add new decomposers

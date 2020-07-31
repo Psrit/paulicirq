@@ -4,7 +4,7 @@ import unittest
 import cirq
 import ddt
 import sympy
-from cirq import Rx, CNOT, H, TOFFOLI
+from cirq import rx, CNOT, H, TOFFOLI
 
 from paulicirq.gates.gate_block import GateBlock
 from paulicirq.op_tree import OpTreeGenerator, VariableNQubitsGenerator
@@ -21,7 +21,7 @@ class FixedWidthGenerator3(OpTreeGenerator):
 
     def __call__(self, qubits):
         q0, q1, q2 = qubits
-        yield Rx(sympy.Symbol("rad0")).on(q0)
+        yield rx(sympy.Symbol("rad0")).on(q0)
         yield CNOT(q0, q1)
         yield H(q2)
         yield CNOT(q2, q1)
@@ -34,7 +34,7 @@ class VariableWidthGenerator(VariableNQubitsGenerator):
 
     def __call__(self, qubits):
         q0, q1, q2 = qubits[0:3]
-        yield Rx(sympy.Symbol("rad0")).on(q0)
+        yield rx(sympy.Symbol("rad0")).on(q0)
         yield CNOT(q0, q1)
         yield H(q2)
         yield CNOT(q2, q1)

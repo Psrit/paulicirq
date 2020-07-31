@@ -13,7 +13,7 @@ class TwoQubitMatrixGateTest(unittest.TestCase):
         circuit = cirq.circuits.Circuit()
 
         circuit.append(
-            cirq.TwoQubitMatrixGate(
+            cirq.MatrixGate(
                 splinalg.expm(1j * 0.1 * PauliWord("XX").sparray.toarray())
             )(*qubits[0:2])
         )

@@ -1,13 +1,13 @@
 import unittest
 
 import ddt
-from cirq import Rx, Z, CNOT
+from cirq import rx, Z, CNOT
 
 from paulicirq.linear_combinations import *
 
 q0, q1, q2 = cirq.LineQubit.range(3)
 
-op_tuple_1 = (Rx(sympy.Symbol("θ"))(q0), CNOT(q2, q1))
+op_tuple_1 = (rx(sympy.Symbol("θ"))(q0), CNOT(q2, q1))
 op_tuple_2 = (CNOT(q0, q2), Z(q1))
 
 m1 = cirq.Moment(op_tuple_1)

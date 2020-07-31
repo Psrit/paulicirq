@@ -164,8 +164,9 @@ def op_grad(
         for op_series, coeff in sub_op_grad.items():
             _controlled_op_series = [
                 cirq.ControlledGate(
-                    op.gate, control_qubits=qubits[:gate.num_controls()]
-                ).on(*sub_gate_qubits)
+                    op.gate,
+                    num_controls=gate.num_controls()
+                ).on(*qubits[:gate.num_controls()], *sub_gate_qubits)
                 for op in op_series
             ]
             _controlled_negative_op_series = copy.deepcopy(_controlled_op_series)
@@ -173,8 +174,8 @@ def op_grad(
                 0,
                 cirq.ControlledGate(
                     GlobalPhaseGate(rad=1),
-                    control_qubits=qubits[:gate.num_controls()]
-                ).on(*sub_gate_qubits)
+                    num_controls=gate.num_controls()
+                ).on(*qubits[:gate.num_controls()], *sub_gate_qubits)
             )
             _gate_grad += LinearCombinationOfOperations({
                 tuple(_controlled_op_series): coeff,
@@ -289,7 +290,7 @@ def generate_random_circuit(
         i = 0
         while i < num_qubits:
             param = sympy.Symbol("θ{}".format(param_index))
-            gate_set = [cirq.Rx(param), cirq.Ry(param), cirq.Rz(param), cirq.CNOT]
+            gate_set = [cirq.rx(param), cirq.ry(param), cirq.rz(param), cirq.CNOT]
             gate = np.random.choice(
                 [g for g in gate_set
                  if i - 1 + g.num_qubits() <= num_qubits - 1],

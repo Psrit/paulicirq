@@ -141,14 +141,12 @@ class ControlledEigenGateTest(unittest.TestCase):
         cq0, cq1, q0 = cirq.LineQubit.range(3)
         ccrz = ControlledEigenGate(
             ControlledEigenGate(
-                cirq.Rz(0.123) ** 0.956,
-                control_qubits=[cq0]
+                cirq.rz(0.123) ** 0.956,
             ),
-            control_qubits=[cq1]
         )
 
         circuit = cirq.Circuit()
-        circuit.append(ccrz.on(q0))
+        circuit.append(ccrz.on(cq0, cq1, q0))
 
         eigen_components = dict(ccrz._eigen_components())
         eigen_components_0 = {
@@ -179,24 +177,22 @@ class ControlledEigenGateTest(unittest.TestCase):
         )
 
     def test_unitary(self):
-        cq0, cq1, q0 = cirq.LineQubit.range(3)
-        ccrz = ControlledEigenGate(
-            cirq.Rz(0.123),
-            control_qubits=[cq0]
+        crz = ControlledEigenGate(
+            cirq.rz(0.123)
         )
 
-        s = ccrz._global_shift
-        e = ccrz._exponent
-        # print(ccrz.sub_gate_exponent)
-        # print(s, e, ccrz._eigen_components())
+        s = crz._global_shift
+        e = crz._exponent
+        # print(crz.sub_gate_exponent)
+        # print(s, e, crz._eigen_components())
         unitary_from_eigen_components = sum(
             np.exp(1.0j * np.pi * (theta + s) * e) * projector
-            for theta, projector in ccrz._eigen_components()
+            for theta, projector in crz._eigen_components()
         )
 
-        # print(cirq.unitary(ccrz))
+        # print(cirq.unitary(crz))
         # print(unitary_from_eigen_components)
         self.assertTrue(np.allclose(
-            cirq.unitary(ccrz),
+            cirq.unitary(crz),
             unitary_from_eigen_components
         ))

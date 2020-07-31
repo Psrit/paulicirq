@@ -5,7 +5,7 @@ import cirq
 import ddt
 import numpy as np
 import sympy
-from cirq import Rx, H, Rz, X, Z, Y, ControlledGate, XPowGate, Ry, IdentityGate
+from cirq import rx, H, rz, X, Z, Y, ControlledGate, XPowGate, ry, IdentityGate
 
 from paulicirq.gates import TwoPauliExpGate, GlobalPhaseGate, PauliWordExpGate
 # from paulicirq.gates.controlled_gates import CRz, CRx
@@ -35,7 +35,7 @@ class OneRotGenerator(OpTreeGenerator):
 
     def __call__(self, qubits, **kwargs):
         q0 = qubits[0]
-        yield Ry(c * rad).on(q0)
+        yield ry(c * rad).on(q0)
         yield IdentityGate(1).on(q1)
 
 
@@ -53,15 +53,15 @@ class TwoRotsGenerator(OpTreeGenerator):
 
     def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
-        yield Rx(rad).on(q0)
-        yield Rz(rad).on(q1)
+        yield rx(rad).on(q0)
+        yield rz(rad).on(q1)
 
 
 class ThreePosargsAndOneVargGenerator(VariableNQubitsGenerator):
     def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
-        yield Rx(rad).on(q0)
-        yield ControlledGate(Rz(rad)).on(q0, q1)
+        yield rx(rad).on(q0)
+        yield ControlledGate(rz(rad)).on(q0, q1)
         # yield H(q2)
         # yield CNOT(q2, q1)
         # yield TOFFOLI(q1, q0, q2)
@@ -81,9 +81,9 @@ u = GateBlock(
 class UPositiveGenerator(VariableNQubitsGenerator):
     def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
-        yield Rx(rad).on(q0)
+        yield rx(rad).on(q0)
         yield ControlledGate(Z).on(q0, q1)
-        yield ControlledGate(Rz(rad)).on(q0, q1)
+        yield ControlledGate(rz(rad)).on(q0, q1)
         # yield H(q2)
         # yield CNOT(q2, q1)
         # yield TOFFOLI(q1, q0, q2)
@@ -101,10 +101,10 @@ u_positive = GateBlock(UPositiveGenerator(5))
 class UNegativeGenerator(VariableNQubitsGenerator):
     def __call__(self, qubits, **kwargs):
         q0, q1 = qubits[:2]
-        yield Rx(rad).on(q0)
+        yield rx(rad).on(q0)
         yield ControlledGate(GlobalPhaseGate(1)).on(q0, q1)
         yield ControlledGate(Z).on(q0, q1)
-        yield ControlledGate(Rz(rad)).on(q0, q1)
+        yield ControlledGate(rz(rad)).on(q0, q1)
         # yield H(q2)
         # yield CNOT(q2, q1)
         # yield TOFFOLI(q1, q0, q2)
@@ -125,12 +125,12 @@ class OperationGradTest(unittest.TestCase):
     @ddt.unpack
     @ddt.data(
 
-        # d[Rx(rad)] / d[rad] = d[e^{-i X rad / 2}] / d[rad]
+        # d[rx(rad)] / d[rad] = d[e^{-i X rad / 2}] / d[rad]
         #                     = -i/2 X e^{-i X rads / 2}
-        #                     = -i/2 X Rx(rad)
-        [Rx(rad).on(q0), rad,
+        #                     = -i/2 X rx(rad)
+        [rx(rad).on(q0), rad,
          LCO({
-             (Rx(rad).on(q0), X(q0)): -0.5j
+             (rx(rad).on(q0), X(q0)): -0.5j
          })],
 
         # d[XPow(e, s)] / d[e] = i pi {s + 1/2 (I - X)} XPow(e, s)
@@ -161,23 +161,23 @@ class OperationGradTest(unittest.TestCase):
               Z(q0), Y(q1), X(q2)): -2.0j * rad
          })],
 
-        # d[Rx(rad) ⊗ Rz(rad)] / d[rad] = -i/2 { X Rx(rad) ⊗ Rz(rad)
-        #                                      + Rx(rad) ⊗ Z Rz(rad) }
+        # d[rx(rad) ⊗ rz(rad)] / d[rad] = -i/2 { X rx(rad) ⊗ rz(rad)
+        #                                      + rx(rad) ⊗ Z rz(rad) }
         [GateBlock(
             TwoRotsGenerator()
         ).on(q0, q1), rad,
          -0.5j * LCO({
-             (Rz(rad).on(q1), Rx(rad).on(q0), X(q0)): 1,
-             (Rz(rad).on(q1), Rx(rad).on(q0), Z(q1)): 1
+             (rz(rad).on(q1), rx(rad).on(q0), X(q0)): 1,
+             (rz(rad).on(q1), rx(rad).on(q0), Z(q1)): 1
          })],
 
         # d[CRx(rad)] / d[rad] = |1><1| ⊗ d[Rx(rad)]/d[rad]
         #                      = -i/2 |1><1| ⊗ X Rx(rad)
         #                      = -i/4 { C[X Rx(rad)] - C[-X Rx(rad)] }
-        [cirq.ControlledGate(Rx(rad), num_controls=1).on(q0, q1), rad,
+        [cirq.ControlledGate(rx(rad), num_controls=1).on(q0, q1), rad,
          -1.0j / 4 * LCO({
-             (ControlledGate(X).on(q0, q1), ControlledGate(Rx(rad)).on(q0, q1)): 1,
-             (ControlledGate(X).on(q0, q1), ControlledGate(Rx(rad)).on(q0, q1),
+             (ControlledGate(X).on(q0, q1), ControlledGate(rx(rad)).on(q0, q1)): 1,
+             (ControlledGate(X).on(q0, q1), ControlledGate(rx(rad)).on(q0, q1),
               ControlledGate(GlobalPhaseGate(1)).on(q0, q1)): -1
          })],
 
@@ -185,16 +185,14 @@ class OperationGradTest(unittest.TestCase):
         #                       = -i/4 { CC[Z Rz(rad)] - CC[-Z Rz(rad)] }
         [ControlledGate(
             ControlledGate(
-                cirq.Rz(rad),
-                control_qubits=[q1]
-            ),
-            control_qubits=[q0]
-        ).on(q2), rad,
+                cirq.rz(rad)
+            )
+        ).on(q0, q1, q2), rad,
          -1.0j / 4 * LCO({
              (ControlledGate(ControlledGate(Z)).on(q0, q1, q2),
-              ControlledGate(ControlledGate(Rz(rad))).on(q0, q1, q2)): 1,
+              ControlledGate(ControlledGate(rz(rad))).on(q0, q1, q2)): 1,
              (ControlledGate(ControlledGate(Z)).on(q0, q1, q2),
-              ControlledGate(ControlledGate(Rz(rad))).on(q0, q1, q2),
+              ControlledGate(ControlledGate(rz(rad))).on(q0, q1, q2),
               ControlledGate(ControlledGate(GlobalPhaseGate(1))).on(q0, q1, q2)): -1
          })],
 
@@ -240,8 +238,8 @@ class OpTreeGeneratorGradTest(unittest.TestCase):
         })
 
         exact_grad_lco = LinearCombinationOfOperations({
-            (X(q0), Rx(rad).on(q0), Rz(rad).on(q1)): -0.5j,
-            (Rx(rad).on(q0), Z(q1), Rz(rad).on(q1)): -0.5j
+            (X(q0), rx(rad).on(q0), rz(rad).on(q1)): -0.5j,
+            (rx(rad).on(q0), Z(q1), rz(rad).on(q1)): -0.5j
         })
 
         param_resolver = {rad: np.random.rand() * 4 * np.pi}
@@ -271,9 +269,9 @@ class OpTreeGeneratorGradTest(unittest.TestCase):
             print(_generator.diagram(), _coeff)
 
         exact_grad_lco = LinearCombinationOfOperations({
-            (X(q0), Rx(rad).on(q0), Rz(rad).on(q1), Ry(c * rad).on(q0)): -0.5j,
-            (Rx(rad).on(q0), Z(q1), Rz(rad).on(q1), Ry(c * rad).on(q0)): -0.5j,
-            (Rx(rad).on(q0), Rz(rad).on(q1), Y(q0), Ry(c * rad).on(q0)): -0.5j * c,
+            (X(q0), rx(rad).on(q0), rz(rad).on(q1), ry(c * rad).on(q0)): -0.5j,
+            (rx(rad).on(q0), Z(q1), rz(rad).on(q1), ry(c * rad).on(q0)): -0.5j,
+            (rx(rad).on(q0), rz(rad).on(q1), Y(q0), ry(c * rad).on(q0)): -0.5j * c,
         })
 
         param_resolver = {

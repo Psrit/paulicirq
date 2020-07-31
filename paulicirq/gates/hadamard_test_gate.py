@@ -69,8 +69,7 @@ def add_hadamard_test(
         circuit.append(cirq.S(auxiliary_qubit))
 
     circuit.append([
-        cirq.ControlledGate(gate_a, control_qubits=[auxiliary_qubit])
-            .on(*state)
+        cirq.ControlledGate(gate_a).on(auxiliary_qubit, *state)
     ])
 
     circuit.append(cirq.H(auxiliary_qubit))

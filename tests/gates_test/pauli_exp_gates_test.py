@@ -165,14 +165,15 @@ class PauliWordExpGateTest(unittest.TestCase):
                     initial_state=initial_state
                 )  # type: cirq.SimulationTrialResult
                 # print(circuit)
-                print(result.final_simulator_state)
+                print(result.final_state)
                 # print(cirq.unitary(circuit_compressed))
 
                 results.append(result)
 
             self.assertTrue(np.allclose(
-                results[0].final_simulator_state.state_vector,
-                results[1].final_simulator_state.state_vector
+                results[0].final_state,
+                results[1].final_state,
+                rtol=1e-4, atol=1e-5
             ))
 
     def test_symbolic_circuit(self):
@@ -214,6 +215,6 @@ class GlobalPhaseGateTest(unittest.TestCase):
             circuit = cirq.resolve_parameters(sym_circuit, {"rad": rad})
             result = simulator.simulate(circuit)
             self.assertTrue(np.allclose(
-                result.final_simulator_state.state_vector,
+                result.final_state,
                 np.exp(1.0j * rad * np.pi) * np.array([1, 0])
             ))

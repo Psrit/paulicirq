@@ -63,9 +63,9 @@ def test_op_tree_identical_with_simulator(
         simulator_2 = cirq.Simulator()
 
         state_1 = (simulator_1.simulate(circuit_1, initial_state=i)
-                   .final_simulator_state.state_vector)
+                   .final_state)
         state_2 = (simulator_2.simulate(circuit_2, initial_state=i)
-                   .final_simulator_state.state_vector)
+                   .final_state)
 
         testcase.assertTrue(np.allclose(state_1, state_2))
 

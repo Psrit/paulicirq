@@ -158,7 +158,7 @@ def simulate_linear_combination_of_operations(
 
         simulator = cirq.Simulator()
         _state = (simulator.simulate(circuit, initial_state=initial_state)
-                  .final_simulator_state.state_vector)  # type: np.ndarray
+                  .final_state)  # type: np.ndarray
 
         state_vector += coeff * _state
         # print(id(lco), coeff, _state)

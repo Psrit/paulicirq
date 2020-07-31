@@ -158,8 +158,8 @@ class TwoPauliExpGate(cirq.TwoQubitGate):
             # vectors_y.inv == -i Rz(-3pi/2) Ry(-pi/2) Rz(-pi/2)
             # vectors_y.inv.dagger == i Rz(pi/2) Ry(pi/2) Rz(3pi/2)
             return (
-                [cirq.Rz(np.pi / 2), cirq.Ry(np.pi / 2), cirq.Rz(3 * np.pi / 2)],
-                [cirq.Rz(-3 * np.pi / 2), cirq.Ry(-np.pi / 2), cirq.Rz(-np.pi / 2)]
+                [cirq.rz(np.pi / 2), cirq.ry(np.pi / 2), cirq.rz(3 * np.pi / 2)],
+                [cirq.rz(-3 * np.pi / 2), cirq.ry(-np.pi / 2), cirq.rz(-np.pi / 2)]
             )
 
         else:
