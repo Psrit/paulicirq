@@ -31,7 +31,7 @@ def get_all_measurement_keys(circuit: cirq.Circuit) -> set:
     return all_measurement_keys
 
 
-def get_all_line_qubit_ids(circuit: cirq.Circuit) -> tuple:
+def get_all_line_qubit_ids(circuit: cirq.Circuit) -> typing.Tuple[int]:
     """
     Return IDs of all LineQubits in `circuit` in order.
 
@@ -45,7 +45,30 @@ def get_all_line_qubit_ids(circuit: cirq.Circuit) -> tuple:
     return tuple(sorted(all_line_qubit_ids))
 
 
-def generate_auxiliary_qubit(circuit: cirq.Circuit) -> cirq.LineQubit:
+def get_all_grid_qubit_ids(circuit: cirq.Circuit) -> typing.Tuple[
+    typing.Tuple[int], typing.Tuple[int]
+]:
+    """
+    Return IDs (i.e. row numbers and column numbers) of all GridQubits in
+    `circuit` in order.
+
+    """
+    all_grid_qubit_rows = set()
+    all_grid_qubit_cols = set()
+
+    for qubit in circuit.all_qubits():
+        if isinstance(qubit, cirq.GridQubit):
+            all_grid_qubit_rows.add(qubit.row)
+            all_grid_qubit_cols.add(qubit.col)
+
+    return (
+        tuple(sorted(all_grid_qubit_rows)), tuple(sorted(all_grid_qubit_cols))
+    )
+
+
+def generate_auxiliary_qubit(
+    circuit: cirq.Circuit, auxiliary_qubit_type: type = cirq.LineQubit
+) -> cirq.Qid:
     """
     Generate an auxiliary qubit in `circuit`.
 
@@ -57,21 +80,49 @@ def generate_auxiliary_qubit(circuit: cirq.Circuit) -> cirq.LineQubit:
         also greater than 999.
 
     """
-    existed_ids = get_all_line_qubit_ids(circuit)
-    if len(existed_ids) == 0:  # if there is no qubit existed in the circuit:
-        max_id = 1
-    else:
-        max_id = max(existed_ids)
-        if max_id <= 0:  # to avoid math domain error for log10
+
+    def _generate_new_id(existed_ids):
+        """
+        Generate a new ID which does not exist in `existed_ids`. An ID can be
+        the ID of a LineQubit, or the row/column number of a GridQubit.
+
+        :param existed_ids:
+            The tuple of existed IDs.
+        :return:
+            A new ID.
+
+        """
+        if len(existed_ids) == 0:  # if there is no qubit existed in the circuit:
             max_id = 1
+        else:
+            max_id = max(existed_ids)
+            if max_id <= 0:  # to avoid math domain error for log10
+                max_id = 1
 
-    largest_digits = math.floor(math.log10(max_id)) + 1  # >= 1
+        largest_digits = math.floor(math.log10(max_id)) + 1  # >= 1
 
-    _id = 10 ** (largest_digits * 2) - 1
-    if _id < 999:
-        _id = 999
+        _id = 10 ** (largest_digits * 2) - 1
+        if _id < 999:
+            _id = 999
 
-    return cirq.LineQubit(_id)
+        return _id
+
+    if auxiliary_qubit_type == cirq.LineQubit:
+        existed_ids = get_all_line_qubit_ids(circuit)
+        _id = _generate_new_id(existed_ids)
+        q_aux = cirq.LineQubit(_id)
+
+    elif auxiliary_qubit_type == cirq.GridQubit:
+        existed_rows, existed_cols = get_all_grid_qubit_ids(circuit)
+        _row = _generate_new_id(existed_rows)
+        _col = _generate_new_id(existed_cols)
+        q_aux = cirq.GridQubit(_row, _col)
+
+    else:
+        raise TypeError(f"Unsupported qubit type: {auxiliary_qubit_type}. "
+                        f"Only LineQubit and GridQubit are supported.")
+
+    return q_aux
 
 
 def is_complex_close(

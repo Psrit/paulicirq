@@ -19,7 +19,7 @@ class SWAPTestGateTestOnTwoQubits(unittest.TestCase):
             cirq.X(self.qubits[1]),
         ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.qubits[0],
             self.qubits[1],
             self.circuit
@@ -39,7 +39,7 @@ class SWAPTestGateTestOnTwoQubits(unittest.TestCase):
             cirq.H(self.qubits[1])
         ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.qubits[0],
             self.qubits[1],
             self.circuit
@@ -56,7 +56,7 @@ class SWAPTestGateTestOnTwoQubits(unittest.TestCase):
             cirq.X(self.qubits[0]),
         ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.qubits[0],
             self.qubits[1],
             self.circuit
@@ -91,7 +91,7 @@ class SWAPTestGateTestOnTwoStates(unittest.TestCase):
                 cirq.X(qubit2),
             ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.state1,
             self.state2,
             self.circuit
@@ -120,7 +120,7 @@ class SWAPTestGateTestOnTwoStates(unittest.TestCase):
                 cirq.H(qubit2)
             ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.state1,
             self.state2,
             self.circuit
@@ -138,7 +138,7 @@ class SWAPTestGateTestOnTwoStates(unittest.TestCase):
                 cirq.X(qubit1),
             ])
 
-        measurement = add_swap_test(
+        measurement, _ = add_swap_test(
             self.state1,
             self.state2,
             self.circuit

@@ -7,10 +7,12 @@ from paulicirq.utils import get_all_measurement_keys, generate_auxiliary_qubit
 
 
 def add_swap_test(
-        state1: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
-        state2: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
-        circuit: cirq.Circuit
-) -> str:
+    state1: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
+    state2: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
+    circuit: cirq.Circuit,
+    auxiliary_qubit_type: type = cirq.GridQubit,
+    cswap_in_elementary_gates: bool = False
+) -> typing.Tuple[str, cirq.Qid]:
     """
     Add a SWAP test between two quantum states `state1` and `state2`, and then add
     the test into `circuit`.
@@ -27,6 +29,11 @@ def add_swap_test(
         Quantum state to be tested.
     :param circuit:
         The quantum circuit to which the SWAP test is to be appended.
+    :param auxiliary_qubit_type:
+        The type of the auxiliary qubit of SWAP test. Only LineQubit and
+        GridQubit are supported.
+    :param cswap_in_elementary_gates:
+        Tells whether the CSWAP gate will be represented in elementary gates.
     :return:
         The string key of the measurement.
 
@@ -42,7 +49,7 @@ def add_swap_test(
             "but {} != {}.".format(len(state1), len(state2))
         )
 
-    auxiliary_qubit = generate_auxiliary_qubit(circuit)
+    auxiliary_qubit = generate_auxiliary_qubit(circuit, auxiliary_qubit_type)
     measurement_name = "SWAP test measure "
 
     existed_swap_measurement_ids = {int(key[len(measurement_name):])
@@ -55,21 +62,25 @@ def add_swap_test(
 
     circuit.append(cirq.H(auxiliary_qubit))
     for qubit1, qubit2 in zip(state1, state2):
-        circuit.append(
-            cirq.CSWAP.on(auxiliary_qubit, qubit1, qubit2)
-        )
+        cswap_op = cirq.CSWAP.on(auxiliary_qubit, qubit1, qubit2)
+        if cswap_in_elementary_gates:
+            circuit.append(
+                cirq.decompose(cswap_op)
+            )
+        else:
+            circuit.append(cswap_op)
 
     circuit.append([
         cirq.H(auxiliary_qubit),
         cirq.measure(auxiliary_qubit, key=measurement_name)
     ])
 
-    return measurement_name
+    return measurement_name, auxiliary_qubit
 
 
 def inner_product_from_swap_test_result(
-        run_result: TrialResult,
-        swap_measurement_key: str
+    run_result: TrialResult,
+    swap_measurement_key: str
 ) -> float:
     from collections import Counter
     swap_result = (run_result.measurements[swap_measurement_key]).flatten()
