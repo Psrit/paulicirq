@@ -1,23 +1,9 @@
 import math
-import sys
 import typing
-import warnings
 
 import cirq
 import numpy as np
 import sympy
-
-TOutput = typing.Any
-
-
-class lazy_load_instance_property(object):
-    def __init__(self, property_func: typing.Callable[..., TOutput]):
-        self.property_func = property_func
-
-    def __get__(self, instance, owner) -> TOutput:
-        value = self.property_func(instance)
-        setattr(instance, self.property_func.__name__, value)
-        return value
 
 
 def get_all_measurement_keys(circuit: cirq.Circuit) -> set:
@@ -125,28 +111,6 @@ def generate_auxiliary_qubit(
     return q_aux
 
 
-def is_complex_close(
-        a: complex, b: complex,
-        rtol: typing.Optional[float] = 1e-09,
-        atol: typing.Optional[float] = 0.0
-) -> True:
-    return (
-            math.isclose(a.real, b.real, rel_tol=rtol, abs_tol=atol)
-            and
-            math.isclose(a.imag, b.imag, rel_tol=rtol, abs_tol=atol)
-    )
-
-
-class ToBeTested:
-    def __init__(self, func, stream: typing.TextIO = sys.stderr):
-        self._func = func
-        self._stream = stream
-
-    def __call__(self, *args, **kwargs):
-        warnings.warn("Function {} needs to be tested.".format(self._func.__name__))
-        return self._func(*args, **kwargs)
-
-
 def pauli_expansion_for_any_matrix(matrix: np.ndarray) -> cirq.LinearDict[str]:
     class _HasUnitary:
         def __init__(self, matrix: np.ndarray):
@@ -156,57 +120,6 @@ def pauli_expansion_for_any_matrix(matrix: np.ndarray) -> cirq.LinearDict[str]:
             return self._matrix
 
     return cirq.pauli_expansion(_HasUnitary(matrix))
-
-
-def random_complex_matrix(*dn) -> np.ndarray:
-    amp = np.random.rand(*dn)
-    arg = np.random.rand(*dn) * 2 * np.pi
-    matrix = amp * np.exp(1.0j * arg)
-    return matrix
-
-
-def inner_product(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """
-    Calculates the inner product between vectors a and b, which equals <a|b>.
-
-    :param a:
-        Vector of n-dimensional (n,), or some vectors of n-dimensional (m, n).
-    :param b:
-        Vector of n-dimensional (n,), or some vectors of n-dimensional (m, n).
-    :return:
-        Inner product between |a> and |b>.
-
-    """
-    braket_a_b = a.conjugate() * b
-    if braket_a_b.ndim == 1:
-        braket_a_b = sum(braket_a_b)
-    else:
-        braket_a_b = np.sum(braket_a_b, axis=1)
-    return braket_a_b
-
-
-def normalized_overlap(a: np.ndarray, b: np.ndarray) -> np.ndarray:
-    """
-    Calculates the overlap between the vectors normalized from a and b.
-
-    The overlap is also called fidelity, which equals |<a'|b'>|^2, where
-    |a'> = a / ||a||, |b'> = b / ||b||.
-
-    :param a:
-        Vector of n-dimensional (n,), or some vectors of n-dimensional (m, n).
-    :param b:
-        Vector of n-dimensional (n,), or some vectors of n-dimensional (m, n).
-    :return:
-        Overlap between |a'> and |b'>.
-
-    """
-    braket_a_b = inner_product(a, b)  # (m,) or ()
-    braket_a_b_squared = braket_a_b * braket_a_b.conjugate()  # |<a|b>|^2
-
-    a_2 = inner_product(a, a)  # ||a||^2, (m,) or ()
-    b_2 = inner_product(b, b)  # ||b||^2, (m,) or ()
-    overlap = braket_a_b_squared / (a_2 * b_2)  # |<a'|b'>|^2
-    return overlap
 
 
 def resolve_scalar(c, param_resolver: cirq.ParamResolverOrSimilarType):
@@ -220,26 +133,84 @@ def resolve_scalar(c, param_resolver: cirq.ParamResolverOrSimilarType):
     return _c_resolved
 
 
-def deduplicate(sequence: typing.Sequence):
-    """
-    Remove repeated terms in `sequence` with the original order preserved.
+GateBatch = typing.List[typing.List[cirq.Gate]]
+GateOperationBatch = typing.List[cirq.OP_TREE]
+CircuitBatch = typing.List[cirq.Circuit]
 
-    :param sequence:
-        The sequence to be processed.
+
+def generate_random_rotation_batch(
+    num_qubits, batch_size
+) -> typing.List[typing.List['General1BitRotation']]:
+    """
+    Generate a batch of random rotations which act on `num_qubits` qubits.
+    The batch size is designated by `batch_size`.
+
+    :param num_qubits:
+        The number of qubits the rotations will act on.
+    :param batch_size:
+        The batch size
     :return:
-        The processed sequence.
+        A batch of random rotations, i.e. a batch of 1-qubit rotations whose
+        shape is (batch_size, num_qubits). Any term in the batch stands for a
+        series of random rotations --- each of them can be used to act on a
+        qubit.
 
     """
-    sequence_type = type(sequence)
+    from paulicirq.gates.general_rotation import General1BitRotation
 
-    _set = set()
-    _list = list(sequence)
-    _deduplicated = []
+    rotation_batch = []
+    for i in range(batch_size):
+        rotations = [
+            General1BitRotation(
+                *(np.random.uniform(size=[3, ], low=-np.pi, high=np.pi)),
+                global_t=1.0
+            )
+            for _ in range(num_qubits)
+        ]
+        rotation_batch.append(rotations)
 
-    for term in _list:
-        if term not in _set:
-            _deduplicated.append(term)
-            _set.add(term)
+    return rotation_batch
 
-    _deduplicated = sequence_type(_deduplicated)
-    return _deduplicated
+
+def act_gate_batch_on_qubits(
+    gate_batch: GateBatch,
+    qubits: typing.Iterable[cirq.Qid],
+    decompose_in_elementary_ops: bool = True,
+    as_circuits: bool = True
+) -> typing.Union[GateOperationBatch, CircuitBatch]:
+    """
+    Act a batch of gates on `qubits`.
+
+    :param gate_batch:
+        A batch of gates, whose shape is (batch_size, num_qubits). Any term
+        in the batch contains `num_qubits` 1-qubit gates, which will be acted
+        on each qubit in `qubits` in order.
+    :param qubits:
+        The qubits which the gates will act on.
+    :param decompose_in_elementary_ops:
+        Tells whether the gates in `gate_batch` should be decomposed into
+        elementary operations.
+    :param as_circuits:
+        Tells whether the applied operations will be constructed as circuits.
+        If False, the function will return a batch of series of operations;
+        if True,  the function will return a batch of circuits.
+    :return:
+        The result of `gate_batch` being acted on `qubits`. See `as_circuits`
+        for more details.
+
+    """
+    op_batch = []
+    for gate_series in gate_batch:
+        op = []
+        for gate, q in zip(gate_series, qubits):
+            if decompose_in_elementary_ops:
+                op.append(cirq.decompose(gate(q)))
+            else:
+                op.append(gate(q))
+
+        if as_circuits:
+            op_batch.append(cirq.Circuit(op))
+        else:
+            op_batch.append(op)
+
+    return op_batch
