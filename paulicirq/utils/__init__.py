@@ -4,7 +4,9 @@ from ._cirq import (
     get_all_grid_qubit_ids,
     generate_auxiliary_qubit,
     pauli_expansion_for_any_matrix,
-    resolve_scalar
+    resolve_scalar,
+    generate_random_rotation_batch,
+    act_gate_batch_on_qubits
 )
 from ._numpy import (
     is_complex_close,
