@@ -17,7 +17,8 @@ class General1BitRotation(cirq.SingleQubitGate):
         """
         Create a general one-bit rotation gate, which is defined by
 
-            U(rad1, rad2, rad3) = Rz(rad3 * t) Ry(rad2 * t) Rz(rad1 * t),
+            U(rad1 * t, rad2 * t, rad3 * t) =
+                Rz(rad3 * t) Ry(rad2 * t) Rz(rad1 * t),
 
         where t is the global exponent of rotation `global_t`.
 
