@@ -53,13 +53,19 @@ def get_all_grid_qubit_ids(circuit: cirq.Circuit) -> typing.Tuple[
 
 
 def generate_auxiliary_qubit(
-    circuit: cirq.Circuit, auxiliary_qubit_type: type = cirq.LineQubit
-) -> cirq.Qid:
+    circuit: cirq.Circuit,
+    auxiliary_qubit_type: typing.Union[
+        typing.Type[cirq.LineQubit], typing.Type[cirq.GridQubit]
+    ] = cirq.LineQubit
+):
     """
     Generate an auxiliary qubit in `circuit`.
 
     :param circuit:
         The target circuit.
+    :param auxiliary_qubit_type:
+        Designates the type of the generated auxiliary qubit. Only `LineQubit`
+        and `GridQubit` are supported.
     :return:
         The generated auxiliary qubit, which is a LineQubit, and whose ID number
         is greater than the ones of all existing LineQubits in `circuit` and is
