@@ -1,5 +1,6 @@
 import unittest
 
+import cirq
 import ddt
 
 from paulicirq.pauli import PauliWord
@@ -29,7 +30,9 @@ class GetAllLineQubitIdsTest(unittest.TestCase):
 
     def test_generate_auxiliary_qubit(self):
         self.assertEqual(
-            generate_auxiliary_qubit(self.circuit).x,
+            generate_auxiliary_qubit(
+                self.circuit, auxiliary_qubit_type=cirq.LineQubit
+            ).x,
             9999
         )
 

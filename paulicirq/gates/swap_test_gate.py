@@ -10,7 +10,10 @@ def add_swap_test(
     state1: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
     state2: typing.Union[cirq.Qid, typing.Iterable[cirq.Qid]],
     circuit: cirq.Circuit,
-    auxiliary_qubit_type: type = cirq.GridQubit,
+    auxiliary_qubit: typing.Optional[cirq.Qid] = None,
+    auxiliary_qubit_type: typing.Optional[
+        typing.Union[typing.Type[cirq.GridQubit], typing.Type[cirq.LineQubit]]
+    ] = cirq.GridQubit,
     cswap_in_elementary_gates: bool = False
 ) -> typing.Tuple[str, cirq.Qid]:
     """
@@ -29,9 +32,23 @@ def add_swap_test(
         Quantum state to be tested.
     :param circuit:
         The quantum circuit to which the SWAP test is to be appended.
+    :param auxiliary_qubit:
+        The auxiliary qubit.
+        If being None, it will be created by `generate_auxiliary_qubit`.
+        If being a `cirq.Qid` object, then it will be used as the auxiliary
+        qubit of our SWAP test, and the argument `auxiliary_qubit_type` will be
+        ignored.
+        Note: `auxiliary_qubit` and `auxiliary_qubit_type` can not both be
+        `None` at the same time.
     :param auxiliary_qubit_type:
         The type of the auxiliary qubit of SWAP test. Only LineQubit and
         GridQubit are supported.
+        If `auxiliary_qubit` is None, this argument will be used to create the
+        auxiliary qubit.
+        If `auxiliary_qubit` is a `cirq.Qid` object, then this argument will be
+        ignored.
+        Note: `auxiliary_qubit` and `auxiliary_qubit_type` can not both be
+        `None` at the same time.
     :param cswap_in_elementary_gates:
         Tells whether the CSWAP gate will be represented in elementary gates.
     :return:
@@ -49,7 +66,8 @@ def add_swap_test(
             "but {} != {}.".format(len(state1), len(state2))
         )
 
-    auxiliary_qubit = generate_auxiliary_qubit(circuit, auxiliary_qubit_type)
+    if auxiliary_qubit is None:
+        auxiliary_qubit = generate_auxiliary_qubit(circuit, auxiliary_qubit_type)
     measurement_name = "SWAP test measure "
 
     existed_swap_measurement_ids = {int(key[len(measurement_name):])
