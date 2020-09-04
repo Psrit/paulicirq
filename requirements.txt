@@ -1,4 +1,6 @@
-cirq==0.8.0
+cirq==0.8.2
 ddt>=1.4.1
 openfermion>=0.10.0
 mpmath
+tensorflow_quantum==0.4.0
+tensorflow==2.3.0

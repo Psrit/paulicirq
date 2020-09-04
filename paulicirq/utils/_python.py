@@ -1,3 +1,5 @@
+import functools
+import signal
 import sys
 import typing
 import warnings
@@ -48,3 +50,49 @@ def deduplicate(sequence: typing.Sequence):
 
     _deduplicated = sequence_type(_deduplicated)
     return _deduplicated
+
+
+def deprecated(func):
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        warnings.warn(
+            "Function {} is deprecated.".format(func.__name__),
+            DeprecationWarning
+        )
+        return func(*args, **kwargs)
+
+    return wrapped
+
+
+def complex_format(c: complex, template: str = "{:.2f}"):
+    s = (template.format(c.real) +
+         ("-" if c.imag < 0 else "+") +
+         template.format(abs(c.imag)) + "i")
+    return s
+
+
+def set_timeout(timeout, *, callback, callback_kwargs=None):
+    if callback_kwargs is None:
+        callback_kwargs = {}
+
+    def wrap_func(func):
+        def handle(signum, frame):
+            raise TimeoutError(
+                f"Function {func} did not finish running in {timeout} seconds."
+            )
+
+        @functools.wraps(func)
+        def wrapped(*args, **kwargs):
+            try:
+                signal.signal(signal.SIGALRM, handle)
+                signal.alarm(timeout)  # start alarm signal
+                result = func(*args, **kwargs)
+                signal.alarm(0)  # close alarm signal
+                return result
+            except TimeoutError as e:
+                if callback:
+                    return callback(**callback_kwargs)
+
+        return wrapped
+
+    return wrap_func

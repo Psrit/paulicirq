@@ -154,7 +154,7 @@ def generate_random_rotation_batch(
     :param num_qubits:
         The number of qubits the rotations will act on.
     :param batch_size:
-        The batch size
+        The batch size.
     :return:
         A batch of random rotations, i.e. a batch of 1-qubit rotations whose
         shape is (batch_size, num_qubits). Any term in the batch stands for a
@@ -220,3 +220,35 @@ def act_gate_batch_on_qubits(
             op_batch.append(op)
 
     return op_batch
+
+
+def replace_qubits(
+    circuit: cirq.Circuit,
+    qubit_map: typing.Mapping
+):
+    old_qubits = set(qubit_map.keys())
+    new_qubits = set(qubit_map.values())
+    if len(old_qubits) != len(new_qubits):
+        raise ValueError(
+            "`qubit_map` must be a bijective mapping."
+        )
+
+    qubits_in_circuit = circuit.all_qubits()
+    unknown_old_qubits = old_qubits - qubits_in_circuit
+    if unknown_old_qubits:
+        raise ValueError(
+            "Some qubits in `old_qubits` do not exist in the original circuit: "
+            f"{unknown_old_qubits}"
+        )
+
+    new_circuit = cirq.Circuit()
+    for moment in circuit:
+        new_moment = cirq.Moment()
+        for operation in moment:
+            new_operation = operation.gate.on(
+                *(qubit_map[q] for q in operation.qubits)
+            )
+            new_moment += new_operation
+        new_circuit += new_moment
+
+    return new_circuit
