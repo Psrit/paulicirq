@@ -232,7 +232,7 @@ class PauliWordExpGate(cirq.Gate):
                 # Note that `dict_form` is a property, therefore `word` won't be changed:
                 qubit_index, rot_axis = word.dict_form.popitem()
                 rotation_gate = getattr(
-                    cirq, "R{}".format(rot_axis.lower())
+                    cirq, "r{}".format(rot_axis.lower())
                 )  # type: typing.Union[cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate]
                 # `* 2` comes from the 2 in the denominator in the exponential of R{x, y, z}
                 yield rotation_gate(coeff * 2).on(qubits[qubit_index])
