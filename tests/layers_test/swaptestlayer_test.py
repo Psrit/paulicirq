@@ -164,8 +164,12 @@ class SWAPTestLayerTest(unittest.TestCase):
 class SWAPTestOutputLayerTest(unittest.TestCase):
     def setUp(self):
         self.num_qubits_of_a_state = 2
-        self.state1 = [cirq.GridQubit(0, i) for i in range(self.num_qubits_of_a_state)]
-        self.state2 = [cirq.GridQubit(1, i) for i in range(self.num_qubits_of_a_state)]
+        self.state1 = tuple(
+            cirq.GridQubit(0, i) for i in range(self.num_qubits_of_a_state)
+        )
+        self.state2 = tuple(
+            cirq.GridQubit(1, i) for i in range(self.num_qubits_of_a_state)
+        )
         self.circuit_batch_size = 5
 
     def test_circuit(self):
@@ -202,11 +206,9 @@ class SWAPTestOutputLayerTest(unittest.TestCase):
             circuit_prepend_of_state2=cirq.Circuit(
                 [cirq.rx(sympy.Symbol("theta2"))(self.state2[0])]
             ),
-            circuit_append_of_state1=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0])]
-            ),
-            circuit_append_of_state2=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
+            circuit_append=cirq.Circuit(
+                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0]),
+                 cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
             ),
             state1=self.state1, state2=self.state2
         )(
@@ -317,11 +319,9 @@ class SWAPTestOutputLayerTest(unittest.TestCase):
             circuit_prepend_of_state2=cirq.Circuit(
                 [cirq.rx(sympy.Symbol("theta2"))(self.state2[0])]
             ),
-            circuit_append_of_state1=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0])]
-            ),
-            circuit_append_of_state2=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
+            circuit_append=cirq.Circuit(
+                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0]),
+                 cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
             ),
             state1=self.state1,
             state2=self.state2
@@ -370,11 +370,9 @@ class SWAPTestOutputLayerTest(unittest.TestCase):
             circuit_prepend_of_state2=cirq.Circuit(
                 [cirq.rx(sympy.Symbol("theta2"))(self.state2[0])]
             ),
-            circuit_append_of_state1=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0])]
-            ),
-            circuit_append_of_state2=cirq.Circuit(
-                [cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
+            circuit_append=cirq.Circuit(
+                [cirq.rx(-sympy.Symbol("theta1"))(self.state1[0]),
+                 cirq.rx(-sympy.Symbol("theta2"))(self.state2[0])]
             ),
             state1=self.state1, state2=self.state2
         )(
@@ -392,3 +390,50 @@ class SWAPTestOutputLayerTest(unittest.TestCase):
         self.assertTrue(
             output_tensor.shape == (2, 2 + 1)
         )
+
+    def test_empty_circuit(self):
+        circuit_input1 = tfq.convert_to_tensor(
+            [cirq.Circuit()]
+        )
+        circuit_input2 = tfq.convert_to_tensor(
+            [cirq.Circuit()]
+        )
+        theta = sympy.Symbol("theta")
+
+        input1_layer = tf.keras.layers.Input(shape=(), dtype=tf.string)
+        input2_layer = tf.keras.layers.Input(shape=(), dtype=tf.string)
+
+        swap_layer: SWAPTestOutputLayer = SWAPTestOutputLayer(
+            circuit_prepend_of_state1=cirq.Circuit(
+                [cirq.rx(theta)(self.state1[0]),
+                 cirq.ry(theta)(self.state1[1])]
+            ),
+            circuit_prepend_of_state2=cirq.Circuit(
+                [cirq.rx(theta)(self.state2[0]),
+                 cirq.ry(theta)(self.state2[1])]
+            ),
+            state1=self.state1, state2=self.state2
+        )
+        swap_layer.set_weights([tf.convert_to_tensor([0.0])])
+        output_layer: tf.Tensor = swap_layer(
+            [input1_layer, input2_layer],
+            add_metric=True
+        )
+
+        model = tf.keras.models.Model(
+            inputs=[input1_layer, input2_layer],
+            outputs=output_layer
+        )
+        model.summary()
+
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(),
+            loss=tf.keras.losses.MeanSquaredError()
+        )
+
+        history = model.evaluate(
+            x=[circuit_input1, circuit_input2],
+            y=tf.convert_to_tensor([[1.0]])
+        )
+        print(history)
+
