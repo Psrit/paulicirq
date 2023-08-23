@@ -13,20 +13,20 @@ qubit = cirq.GridQubit(0, 0)
 
 class AddPQCTest(unittest.TestCase):
     def setUp(self) -> None:
-        # 输入线路数据（张量）
+        # Input data (tensor of quantum circuit)
         self.input_circuit_tensors = tfq.convert_to_tensor([
             cirq.Circuit(cirq.X(qubit)),
             cirq.Circuit(cirq.Y(qubit)),
             cirq.Circuit(cirq.H(qubit))
         ])
 
-        # 需要添加的参数化线路
+        # PQC to be added
         self.theta = sympy.Symbol("theta")
         self.parameterized_circuit = cirq.Circuit(
             (cirq.X ** self.theta).on(qubit)
         )
 
-        # AddPQC 层
+        # AddPQC layer
         self.add_layer: AddPQC = AddPQC(
             self.parameterized_circuit,
             constraint=tf.keras.constraints.MinMaxNorm(
@@ -57,11 +57,11 @@ class AddPQCTest(unittest.TestCase):
         # print(self.add_layer.get_weights())
         # print(self.add_layer.symbol_values())
 
-        self.add_layer.set_weights(np.array([[1]]))  # 不会对 added_tensor 产生影响（仍然是含参数的）
+        self.add_layer.set_weights(np.array([[1]]))  # won't influence added_tensor, which is still parameterized
 
         theta_values = tf.convert_to_tensor([
             [1], [1], [1]
-        ], dtype=tf.float32)
+        ], dtype=tf.float32)  # the first dimension length must be equal to the batch size
 
         with tf.GradientTape() as g:
             g.watch(theta_values)
@@ -70,7 +70,6 @@ class AddPQCTest(unittest.TestCase):
                 operators=[cirq.Z(qubit)],
                 symbol_names=[self.theta],
                 symbol_values=theta_values,
-                # [[0]] or [[0], [0]]: exit code 139, SIGSEGV 11. 和 Expectation 的 call 规则有关???
                 # initializer=tf.keras.initializers.Zeros(),  # 若不使用 GradientTape，则可以通过 initializer 来初始化训练参数
             )
 
@@ -143,10 +142,85 @@ class AddPQCTest(unittest.TestCase):
         ))
 
     def test_model_fit(self):
+        qubit = cirq.GridQubit(0, 0)
+
+        # The first PQC to be added
+        theta = sympy.Symbol("theta")
+        pqc1 = cirq.Circuit(
+            (cirq.X ** theta).on(qubit)
+        )
+        theta_bounds = (0, 2)
+
+        # The second PQC to be added
+        phi = sympy.Symbol("phi")
+        pqc2 = cirq.Circuit(
+            (cirq.Y ** phi).on(qubit)
+        )
+        phi_bounds = (0, 2)
+
+        class TestModel(tf.keras.models.Model):
+            def __init__(self):
+                super().__init__(self)
+                self.add_layer1: AddPQC = AddPQC(
+                    pqc1,
+                    constraint=tf.keras.constraints.MinMaxNorm(
+                        min_value=theta_bounds[0], max_value=theta_bounds[1]
+                    ),
+                    initializer=tf.keras.initializers.RandomUniform(
+                        theta_bounds[0], theta_bounds[1]
+                    )
+                )
+                self.add_layer2: AddPQC = AddPQC(
+                    pqc2,
+                    constraint=tf.keras.constraints.MinMaxNorm(
+                        min_value=phi_bounds[0], max_value=phi_bounds[1]
+                    ),
+                    initializer=tf.keras.initializers.RandomUniform(
+                        phi_bounds[0], phi_bounds[1]
+                    )
+                )
+                self.expectation_layer = tfq.layers.Expectation(
+                    differentiator=tfq.differentiators.ParameterShift()
+                )
+
+            def call(self, inputs):
+                x = self.add_layer1(
+                    inputs, append=True
+                )
+                x = self.add_layer2(
+                    x, append=True
+                )
+
+                symbol_values = tf.concat([
+                    self.add_layer1.get_parameters(),
+                    self.add_layer2.get_parameters()
+                ], axis=1)
+                outputs = self.expectation_layer(
+                    x,
+                    operators=[cirq.Z(qubit)],
+                    symbol_names=[theta, phi],
+                    symbol_values=tf.tile(
+                        symbol_values,
+                        [tf.shape(inputs)[0], 1]
+                    )
+                )
+
+                return outputs
+
+        model = TestModel()
+        model.compile(
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.05),
+            loss=tf.keras.losses.MeanSquaredError()
+        )
+
+        print(model.variables)
+
+        input_circuit = cirq.Circuit(cirq.X(qubit))
+
         batch_size = 5
         input_tensor = tfq.convert_to_tensor(
             [
-                cirq.Circuit(cirq.X(qubit))
+                input_circuit
             ] * batch_size
         )
         y_tensor = tf.convert_to_tensor(
@@ -155,36 +229,8 @@ class AddPQCTest(unittest.TestCase):
             ] * batch_size
         )
 
-        input_layer = tf.keras.layers.Input(shape=(), dtype=tf.string)
-        x = self.add_layer(
-            input_layer, append=True
-        )
-        print(self.add_layer.parameters)
-        output_layer = self.expectation_layer(
-            x,
-            operators=[cirq.Z(qubit)],
-            symbol_names=[self.theta],
-            symbol_values=self.add_layer.get_parameters()
-        )
-        # output_layer = tfq.layers.PQC(
-        #     self.parameterized_circuit,
-        #     operators=[cirq.Z(qubit)],
-        #     constraint=tf.keras.constraints.MinMaxNorm(
-        #         min_value=0, max_value=2
-        #     )
-        # )(input_layer)
-
-        model = tf.keras.models.Model(
-            inputs=input_layer,
-            outputs=output_layer
-        )
-        model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=0.05),
-            loss=tf.keras.losses.MeanSquaredError()
-        )
-
-        print(model.get_weights())
-        print(model.summary())
+        # model(input_tensor)
+        # print(model.summary())
 
         history = model.fit(
             input_tensor,
@@ -193,4 +239,28 @@ class AddPQCTest(unittest.TestCase):
             epochs=20,
             verbose=1
         )
-        print(model.get_weights())
+        print(model.variables)
+        print(model(tfq.convert_to_tensor([input_circuit])))  # ~1
+
+        resolved_pqc = cirq.resolve_parameters(
+            tfq.from_tensor(model.add_layer1._model_circuit)[0]
+            + tfq.from_tensor(model.add_layer2._model_circuit)[0],
+            param_resolver={
+                theta: model.add_layer1.get_parameters().numpy()[0, 0],
+                phi: model.add_layer2.get_parameters().numpy()[0, 0]
+            }
+        )
+        z_probs = np.round(
+            np.abs(
+                cirq.unitary(input_circuit + resolved_pqc) @ np.array([1, 0])
+            ) ** 2, 2
+        )
+        print(z_probs)
+        # self.assertTrue(
+        #     np.allclose(
+        #         z_probs,  # simulated output probability distribution of <Z>
+        #         np.array([1, 0]),
+        #         atol=0.05,
+        #         rtol=0.01
+        #     )
+        # )

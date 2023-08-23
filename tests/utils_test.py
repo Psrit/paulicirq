@@ -1,10 +1,10 @@
-import re
 import unittest
 
 import cirq
 import ddt
 import numpy as np
 import tensorflow as tf
+from tensorflow.python.autograph.impl.api import StagingError
 
 from paulicirq.pauli import PauliWord
 from paulicirq.utils import *
@@ -173,18 +173,18 @@ class SubstatesTest(unittest.TestCase):
         entangled_state = cirq.kron(z[0], z[1]) + cirq.kron(z[1], z[0])
         entangled_state /= np.sqrt(np.conj(entangled_state) @ entangled_state.T)
         entangled_state_tensor = tf.convert_to_tensor(entangled_state)
-        with self.assertRaisesRegex(
-            ValueError,
-            re.compile(
-                "Input wavefunction could not be factored into pure state over "
-                "indices \[1\]"
-            )
-        ):
+
+        with self.assertRaises(StagingError) as cm:
             substates(entangled_state_tensor, keep_indices=[1])
+        self.assertRegex(
+            cm.exception.ag_error_metadata.cause_message,
+            "Input state vector could not be factored into pure state over "
+            "indices \[1\]"
+        )
 
 
 @set_timeout(1, callback=(lambda: "Timed out."))
-def tester(t):
+def timeout_tester(t):
     """Test function."""
     import time
     print("started")
@@ -199,21 +199,21 @@ def tester(t):
 class SetTimeoutTest(unittest.TestCase):
     def test_docstring(self):
         self.assertEqual(
-            tester.__doc__,
+            timeout_tester.__doc__,
             "Test function."
         )
 
     def test_didnt_timeout(self):
         import math
         t = 0.05
-        delta_t = tester(t)
+        delta_t = timeout_tester(t)
         self.assertTrue(
             math.isclose(t, delta_t, rel_tol=0.01, abs_tol=0.01)
         )
 
     def test_timed_out(self):
         t = 1.05
-        timeout_info = tester(t)
+        timeout_info = timeout_tester(t)
         self.assertEqual(
             timeout_info,
             "Timed out."

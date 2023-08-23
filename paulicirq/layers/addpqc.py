@@ -23,8 +23,68 @@ class AddPQC(tf.keras.layers.Layer):
         to the inputs. This layer will accept one input tensor representing a
         quantum data source (these circuits may contain some symbols) and
         append/prepend the model_circuit to them, and then output the assembled
-        circuit tensor.
 
+        For example, PQCs can be connected as follows:
+
+        ```python
+        class MyModel(tf.keras.models.Model):
+            def __init__(self):
+                super().__init__(self)
+                self.add_layer1: AddPQC = AddPQC(
+                    pqc1,
+                    constraint=tf.keras.constraints.MinMaxNorm(
+                        min_value=theta_bounds[0], max_value=theta_bounds[1]
+                    ),
+                    initializer=tf.keras.initializers.RandomUniform(
+                        theta_bounds[0], theta_bounds[1]
+                    )
+                )
+                self.add_layer2: AddPQC = AddPQC(
+                    pqc2,
+                    constraint=tf.keras.constraints.MinMaxNorm(
+                        min_value=phi_bounds[0], max_value=phi_bounds[1]
+                    ),
+                    initializer=tf.keras.initializers.RandomUniform(
+                        phi_bounds[0], phi_bounds[1]
+                    )
+                )
+                self.expectation_layer = tfq.layers.Expectation(
+                    differentiator=tfq.differentiators.ParameterShift()
+                )
+
+            def call(self, inputs):
+                x = self.add_layer1(
+                    inputs, append=True
+                )
+                x = self.add_layer2(
+                    x, append=True
+                )
+
+                symbol_values = tf.concat([
+                    self.add_layer1.get_parameters(),
+                    self.add_layer2.get_parameters()
+                ], axis=1)
+                outputs = self.expectation_layer(
+                    x,
+                    operators=[cirq.Z(qubit)],
+                    symbol_names=[theta, phi],
+                    symbol_values=tf.tile(
+                        symbol_values,
+                        [tf.shape(inputs)[0], 1]
+                    )
+                )
+
+                return outputs
+        ```
+
+        Important note: ONLY use this class inside a customized Model/Layer's
+        `call` method with the expectation value of PQC calculated (i.e. don't
+        use it to assemble a Sequential model).
+        This is because the `call` method of `tfq.layers.Expectation` (which
+        is necessary for a measurement-based quantum model) requires a tiled
+        `symbol_values` whose first dimension length equals the batch size,
+        which should be determined until the training stage (unless it is
+        hard-coded).
 
         model_circuit:
             `cirq.Circuit` containing `sympy.Symbols` that will be used as the
@@ -142,11 +202,11 @@ class AddPQC(tf.keras.layers.Layer):
 
         # Append circuit:
         if append is True:
-            return tfq_utility_ops.tfq_append_circuit(inputs, model_circuit)
+            return tfq_utility_ops.append_circuit(inputs, model_circuit)
 
         # Otherwise prepend circuit.
         else:
-            return tfq_utility_ops.tfq_append_circuit(model_circuit, inputs)
+            return tfq_utility_ops.append_circuit(model_circuit, inputs)
 
     @property
     def symbols(self):

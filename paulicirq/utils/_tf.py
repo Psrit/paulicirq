@@ -69,7 +69,7 @@ def substates(
         one_state: tf.Tensor
     ) -> tf.Tensor:
         import cirq
-        one_substate = cirq.subwavefunction(
+        one_substate = cirq.sub_state_vector(
             one_state.numpy(), keep_indices=keep_indices, atol=atol
         )
         return tf.convert_to_tensor(one_substate)

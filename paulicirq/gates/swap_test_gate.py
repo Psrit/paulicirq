@@ -1,7 +1,6 @@
 import typing
 
 import cirq
-from cirq import TrialResult
 
 from paulicirq.utils import get_all_measurement_keys, generate_auxiliary_qubit
 
@@ -97,7 +96,7 @@ def add_swap_test(
 
 
 def inner_product_from_swap_test_result(
-    run_result: TrialResult,
+    run_result: cirq.Result,
     swap_measurement_key: str
 ) -> float:
     from collections import Counter

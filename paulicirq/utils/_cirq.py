@@ -128,9 +128,11 @@ def pauli_expansion_for_any_matrix(matrix: np.ndarray) -> cirq.LinearDict[str]:
     return cirq.pauli_expansion(_HasUnitary(matrix))
 
 
-def resolve_scalar(c, param_resolver: cirq.ParamResolverOrSimilarType):
+def resolve_scalar(
+    c, param_resolver: cirq.ParamResolverOrSimilarType, recursive: bool = True
+):
     try:
-        _c_resolved = cirq.resolve_parameters(c, param_resolver)
+        _c_resolved = cirq.resolve_parameters(c, param_resolver, recursive)
     except TypeError:
         assert isinstance(c, sympy.Basic)
         c = c.subs(cirq.ParamResolver(param_resolver).param_dict)

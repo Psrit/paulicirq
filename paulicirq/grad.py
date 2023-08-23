@@ -34,7 +34,7 @@ def is_zero_op_or_grad_not_implemented(grad):
 
 @ToBeTested
 def op_grad(
-        operation: cirq.GateOperation, parameter: sympy.Symbol
+    operation: cirq.GateOperation, parameter: sympy.Symbol
 ) -> typing.Union[
     LinearCombinationOfOperations,
     GradNotImplemented
@@ -203,8 +203,8 @@ def op_grad(
 
 
 def op_series_grad(
-        op_series: typing.List[cirq.Operation],
-        parameter: sympy.Symbol
+    op_series: typing.List[cirq.Operation],
+    parameter: sympy.Symbol
 ) -> typing.Union[LinearCombinationOfOperations, GradNotImplemented]:
     grad_dict = LinearCombinationOfOperations({})
     for i, _op in enumerate(op_series):
@@ -217,9 +217,9 @@ def op_series_grad(
             for _grad_op, coeff in _grad.items():
                 _grad_op_series = copy.deepcopy(op_series)
                 _grad_op_series = (
-                        _grad_op_series[:i]
-                        + list(_grad_op)
-                        + _grad_op_series[i + 1:]
+                    _grad_op_series[:i]
+                    + list(_grad_op)
+                    + _grad_op_series[i + 1:]
                 )
                 grad_dict += LinearCombinationOfOperations({
                     tuple(_grad_op_series): coeff
@@ -229,9 +229,9 @@ def op_series_grad(
 
 
 def op_tree_generator_grad(
-        op_tree_generator: OpTreeGenerator,
-        parameter: sympy.Symbol,
-        **generator_call_kwargs
+    op_tree_generator: OpTreeGenerator,
+    parameter: sympy.Symbol,
+    **generator_call_kwargs
 ) -> typing.Union[LinearSymbolicDict[OpTreeGenerator], GradNotImplemented]:
     num_qubits = op_tree_generator.num_qubits
 
@@ -273,8 +273,8 @@ def op_tree_generator_grad(
 
 
 def generate_random_circuit(
-        num_qubits=5,
-        circuit_len=10,
+    num_qubits=5,
+    circuit_len=10,
 ):
     qubits = cirq.LineQubit.range(num_qubits)
 

@@ -49,12 +49,12 @@ class General1BitRotation(cirq.SingleQubitGate):
         yield cirq.rz(self.rad3).on(q)
 
     def _resolve_parameters_(
-        self, param_resolver: cirq.ParamResolver
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
     ) -> "General1BitRotation":
         return General1BitRotation(
-            rad1=param_resolver.value_of(self.rad1),
-            rad2=param_resolver.value_of(self.rad2),
-            rad3=param_resolver.value_of(self.rad3)
+            rad1=param_resolver.value_of(self.rad1, recursive),
+            rad2=param_resolver.value_of(self.rad2, recursive),
+            rad3=param_resolver.value_of(self.rad3, recursive)
         )
 
     def _circuit_diagram_info_(

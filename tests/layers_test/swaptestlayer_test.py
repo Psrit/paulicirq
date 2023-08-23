@@ -102,7 +102,7 @@ class SWAPTestLayerTest(unittest.TestCase):
                 as_circuits=True
             )
         )
-        circuit_input2 = tfq_utility_ops.tfq_append_circuit(
+        circuit_input2 = tfq_utility_ops.append_circuit(
             tfq.convert_to_tensor([
                                       cirq.Circuit([cirq.X.on_each(self.state2)])
                                   ] * self.circuit_batch_size),

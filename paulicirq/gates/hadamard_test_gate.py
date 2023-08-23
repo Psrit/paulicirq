@@ -1,7 +1,6 @@
 import typing
 
 import cirq
-from cirq import TrialResult
 
 from paulicirq.utils import generate_auxiliary_qubit, get_all_measurement_keys
 
@@ -79,7 +78,7 @@ def add_hadamard_test(
 
 
 def inner_product_from_hadamard_test_result(
-        run_result: TrialResult,
+        run_result: cirq.Result,
         hadamard_measurement_key: str,
         is_imaginary_part: bool
 ) -> float:

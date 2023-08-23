@@ -9,14 +9,14 @@ from paulicirq.gates.controlled_gates import (
 )
 from paulicirq.gates.random_gates import RandomMatrixGate
 from paulicirq.gates.universal_gate_set import is_a_basic_operation
-from tests.utils import test_gate_decomposition
+from tests.utils import _test_gate_decomposition
 
 
 class Controlled1BitMatrixGateTest(unittest.TestCase):
     def test_identity(self):
         identity = cirq.I
         c1u1 = Controlled1BitMatrixGate(sub_gate=identity)
-        test_gate_decomposition(
+        _test_gate_decomposition(
             c1u1, self, expected_unitary=np.array([[1.0]]),
             print_circuit=False
         )
@@ -24,22 +24,22 @@ class Controlled1BitMatrixGateTest(unittest.TestCase):
     def test_pauli_x(self):
         pauli_x = cirq.X
         c1u1 = Controlled1BitMatrixGate(sub_gate=pauli_x)
-        test_gate_decomposition(c1u1, self, print_circuit=False)
+        _test_gate_decomposition(c1u1, self, print_circuit=False)
 
     def test_pauli_y(self):
         pauli_y = cirq.Y
         c1u1 = Controlled1BitMatrixGate(sub_gate=pauli_y)
-        test_gate_decomposition(c1u1, self, print_circuit=False)
+        _test_gate_decomposition(c1u1, self, print_circuit=False)
 
     def test_pauli_z(self):
         pauli_z = cirq.Z
         c1u1 = Controlled1BitMatrixGate(sub_gate=pauli_z)
-        test_gate_decomposition(c1u1, self, print_circuit=False)
+        _test_gate_decomposition(c1u1, self, print_circuit=False)
 
     def test_random_matrix_gate(self):
         sub_gate = RandomMatrixGate(num_qubits=1)
         c1u1 = Controlled1BitMatrixGate(sub_gate=sub_gate)
-        test_gate_decomposition(c1u1, self, print_circuit=False)
+        _test_gate_decomposition(c1u1, self, print_circuit=False)
 
 
 class CRotGateTest(unittest.TestCase):
@@ -115,19 +115,19 @@ class CRotGateTest(unittest.TestCase):
         for i in range(self.NUM_TESTS):
             rads = np.random.rand() * 2 * np.pi  # [0, 2π)
             c_rx = CRx(rads)
-            test_gate_decomposition(c_rx, self, print_circuit=False)
+            _test_gate_decomposition(c_rx, self, print_circuit=False)
 
     def test_c_ry(self):
         for i in range(self.NUM_TESTS):
             rads = np.random.rand() * 2 * np.pi  # [0, 2π)
             c_ry = CRy(rads)
-            test_gate_decomposition(c_ry, self, print_circuit=False)
+            _test_gate_decomposition(c_ry, self, print_circuit=False)
 
     def test_c_rz(self):
         for i in range(self.NUM_TESTS):
             rads = np.random.rand() * 2 * np.pi  # [0, 2π)
             c_rz = CRz(rads)
-            test_gate_decomposition(c_rz, self, print_circuit=False)
+            _test_gate_decomposition(c_rz, self, print_circuit=False)
 
 
 class ControlledEigenGateTest(unittest.TestCase):

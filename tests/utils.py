@@ -8,11 +8,11 @@ from paulicirq.linear_combinations import LinearCombinationOfOperations, simulat
 from paulicirq.gates.universal_gate_set import is_a_basic_operation
 
 
-def test_gate_decomposition(
-        gate: cirq.Gate,
-        testcase: unittest.TestCase,
-        print_circuit=True,
-        expected_unitary=None
+def _test_gate_decomposition(
+    gate: cirq.Gate,
+    testcase: unittest.TestCase,
+    print_circuit=True,
+    expected_unitary=None
 ):
     qubits = cirq.LineQubit.range(2)
     control, target = qubits
@@ -41,10 +41,10 @@ def test_gate_decomposition(
     ))
 
 
-def test_op_tree_identical_with_simulator(
-        op_tree_1: OP_TREE,
-        op_tree_2: OP_TREE,
-        testcase: unittest.TestCase,
+def _test_op_tree_identical_with_simulator(
+    op_tree_1: OP_TREE,
+    op_tree_2: OP_TREE,
+    testcase: unittest.TestCase,
 ):
     circuit_1 = cirq.Circuit()
     circuit_1.append(op_tree_1)
@@ -63,17 +63,17 @@ def test_op_tree_identical_with_simulator(
         simulator_2 = cirq.Simulator()
 
         state_1 = (simulator_1.simulate(circuit_1, initial_state=i)
-                   .final_state)
+                   .final_state_vector)
         state_2 = (simulator_2.simulate(circuit_2, initial_state=i)
-                   .final_state)
+                   .final_state_vector)
 
         testcase.assertTrue(np.allclose(state_1, state_2))
 
 
-def test_lco_identical_with_simulator(
-        lco1: LinearCombinationOfOperations,
-        lco2: LinearCombinationOfOperations,
-        testcase: unittest.TestCase
+def _test_lco_identical_with_simulator(
+    lco1: LinearCombinationOfOperations,
+    lco2: LinearCombinationOfOperations,
+    testcase: unittest.TestCase
 ):
     if cirq.is_parameterized(lco1):
         raise ValueError("Operations containing parameters are not supported! "

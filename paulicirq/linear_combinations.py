@@ -41,10 +41,11 @@ class LinearSymbolicDict(cirq.value.LinearDict[T]):
 
     @staticmethod
     def _resolve_parameters_of_term(
-            term: T,
-            param_resolver: cirq.ParamResolverOrSimilarType
+        term: T,
+        param_resolver: cirq.ParamResolverOrSimilarType,
+        recursive: bool = True
     ) -> T:
-        return cirq.resolve_parameters(term, param_resolver)
+        return cirq.resolve_parameters(term, param_resolver, recursive)
 
     def _is_parameterized_(self) -> typing.Union[bool, type(NotImplemented)]:
         for v, c in self._terms.items():
@@ -59,8 +60,9 @@ class LinearSymbolicDict(cirq.value.LinearDict[T]):
         return False
 
     def _resolve_parameters_(
-            self: TypeOfSelf,
-            param_resolver: cirq.ParamResolverOrSimilarType
+        self: TypeOfSelf,
+        param_resolver: cirq.ParamResolverOrSimilarType,
+        recursive: bool = True
     ) -> TypeOfSelf:
         _resolved = type(self)({})
 
@@ -68,8 +70,8 @@ class LinearSymbolicDict(cirq.value.LinearDict[T]):
             _c_resolved = resolve_scalar(c, param_resolver)
 
             _resolved += type(self)({
-                self._resolve_parameters_of_term(v, param_resolver):
-                    _c_resolved
+                self._resolve_parameters_of_term(v, param_resolver, recursive):
+                _c_resolved
             })
 
         return _resolved
@@ -95,10 +97,11 @@ class LinearCombinationOfMoments(LinearSymbolicDict[cirq.Moment]):
         return False
 
     @staticmethod
-    def _resolve_parameters_of_term(term: cirq.Moment, param_resolver) \
-            -> cirq.Moment:
+    def _resolve_parameters_of_term(
+        term: cirq.Moment, param_resolver, recursive: bool = True
+    ) -> cirq.Moment:
         _moment = cirq.Moment(
-            cirq.resolve_parameters(op, param_resolver)
+            cirq.resolve_parameters(op, param_resolver, recursive)
             for op in term.operations
         )
 
@@ -113,7 +116,7 @@ class LinearCombinationOfOperations(
 
     @staticmethod
     def _is_term_parameterized(term: typing.Tuple[cirq.Operation]) \
-            -> typing.Union[bool, type(NotImplemented)]:
+        -> typing.Union[bool, type(NotImplemented)]:
         for op in term:
             _is = cirq.is_parameterized(op)
 
@@ -124,10 +127,10 @@ class LinearCombinationOfOperations(
 
     @staticmethod
     def _resolve_parameters_of_term(
-            term: typing.Tuple[cirq.Operation], param_resolver
+        term: typing.Tuple[cirq.Operation], param_resolver, recursive: bool = True
     ) -> typing.Tuple[cirq.Operation]:
         _op_tuple = tuple(
-            cirq.resolve_parameters(op, param_resolver)
+            cirq.resolve_parameters(op, param_resolver, recursive)
             for op in term
         )
 
@@ -144,8 +147,8 @@ class LinearCombinationOfOperations(
 
 
 def simulate_linear_combination_of_operations(
-        lco: LinearCombinationOfOperations,
-        initial_state
+    lco: LinearCombinationOfOperations,
+    initial_state
 ) -> np.ndarray:
     state_vector = 0  # type: np.ndarray
 
@@ -157,8 +160,8 @@ def simulate_linear_combination_of_operations(
         circuit.append(op_tuple)
 
         simulator = cirq.Simulator()
-        _state = (simulator.simulate(circuit, initial_state=initial_state)
-                  .final_state)  # type: np.ndarray
+        sim_result = simulator.simulate(circuit, initial_state=initial_state)
+        _state = sim_result.final_state_vector  # type: np.ndarray
 
         state_vector += coeff * _state
         # print(id(lco), coeff, _state)

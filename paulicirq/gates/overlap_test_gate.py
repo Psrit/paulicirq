@@ -3,7 +3,6 @@ import typing
 
 import numpy as np
 import cirq
-from cirq import TrialResult
 
 from paulicirq.utils import get_all_measurement_keys
 
@@ -73,7 +72,7 @@ def add_overlap_test(
 
 
 def inner_product_from_overlap_test_result(
-        run_result: TrialResult,
+        run_result: cirq.Result,
         overlap_measurement_key: str
 ) -> float:
     from collections import Counter
@@ -89,7 +88,7 @@ def inner_product_from_overlap_test_result(
     if isinstance(overlap_result, float):  # if overlap_result was not changed
         raise ValueError(
             "The overlap test key given does not match any measurement in the "
-            "TrialResult, which is {}.".format(overlap_measurement_key)
+            "result, which is {}.".format(overlap_measurement_key)
         )
 
     overlap_result = typing.cast(np.ndarray, overlap_result)

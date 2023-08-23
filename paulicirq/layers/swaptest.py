@@ -39,7 +39,7 @@ class SWAPTestLayer(tf.keras.layers.Layer):
         )
         swap_test_layer = AddPQC(model_circuit=swap_test_circuit)
 
-        combined_input_circuit = tfq_utility_ops.tfq_append_circuit(
+        combined_input_circuit = tfq_utility_ops.append_circuit(
             state1_circuit_tensor, state2_circuit_tensor
         )
         return swap_test_layer(combined_input_circuit, append=True)
@@ -55,31 +55,9 @@ class SWAPTestLayer(tf.keras.layers.Layer):
         )
         return q_aux
 
-    @property
-    def symbols(self):
-        """
-        The symbols that are managed by this layer (in-order).
-
-        Note:
-            `symbols[i]` indicates what symbol name the managed variables in
-            this layer map to.
-
-        """
-        return [sympy.Symbol(x) for x in self._symbols_list]
-
-    def symbol_values(self):
-        """
-        Returns a Python `dict` containing symbol name, value pairs.
-
-        :returns:
-            Python `dict` with `str` keys and `float` values representing
-            the current symbol values.
-        """
-        return dict(zip(self.symbols, self.get_weights()[0]))
-
 
 def _inspect_state(
-    state, circuit_prepend, circuit_append
+        state, circuit_prepend, circuit_append
 ) -> typing.Tuple[
     typing.Iterable[cirq.GridQubit], cirq.Circuit, cirq.Circuit
 ]:
@@ -150,21 +128,21 @@ def _inspect_state(
 
 class SWAPTestOutputLayer(SWAPTestLayer):
     def __init__(
-        self,
-        state1: typing.Union[cirq.Qid, typing.Tuple[cirq.GridQubit]],
-        state2: typing.Union[cirq.Qid, typing.Tuple[cirq.GridQubit]],
-        *,
-        operators=None,
-        circuit_prepend_of_state1: typing.Optional[cirq.Circuit] = None,
-        circuit_prepend_of_state2: typing.Optional[cirq.Circuit] = None,
-        circuit_append: typing.Optional[cirq.Circuit] = None,
-        repetitions=None,
-        backend=None,
-        differentiator=None,
-        initializer=tf.keras.initializers.RandomUniform(0, 2 * np.pi),
-        regularizer=None,
-        constraint=None,
-        **kwargs
+            self,
+            state1: typing.Union[cirq.Qid, typing.Tuple[cirq.GridQubit]],
+            state2: typing.Union[cirq.Qid, typing.Tuple[cirq.GridQubit]],
+            *,
+            operators=None,
+            circuit_prepend_of_state1: typing.Optional[cirq.Circuit] = None,
+            circuit_prepend_of_state2: typing.Optional[cirq.Circuit] = None,
+            circuit_append: typing.Optional[cirq.Circuit] = None,
+            repetitions=None,
+            backend=None,
+            differentiator=None,
+            initializer=tf.keras.initializers.RandomUniform(0, 2 * np.pi),
+            regularizer=None,
+            constraint=None,
+            **kwargs
     ):
         """Instantiate this layer."""
         super().__init__(state1, state2, **kwargs)
@@ -304,6 +282,28 @@ class SWAPTestOutputLayer(SWAPTestLayer):
                                           constraint=self.constraint,
                                           dtype=tf.float32,
                                           trainable=True)
+
+    @property
+    def symbols(self):
+        """
+        The symbols that are managed by this layer (in-order).
+
+        Note:
+            `symbols[i]` indicates what symbol name the managed variables in
+            this layer map to.
+
+        """
+        return [sympy.Symbol(x) for x in self._symbols_list]
+
+    def symbol_values(self):
+        """
+        Returns a Python `dict` containing symbol name, value pairs.
+
+        :returns:
+            Python `dict` with `str` keys and `float` values representing
+            the current symbol values.
+        """
+        return dict(zip(self.symbols, self.get_weights()[0]))
 
     def call(self, inputs, add_metric=False):
         """Keras call function."""

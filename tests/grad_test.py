@@ -14,7 +14,7 @@ from paulicirq.grad import op_grad, GradNotImplemented, op_tree_generator_grad
 from paulicirq.linear_combinations import LinearCombinationOfOperations as LCO, LinearCombinationOfOperations
 from paulicirq.op_tree import OpTreeGenerator, VariableNQubitsGenerator
 from paulicirq.pauli import PauliWord
-from tests.utils import test_lco_identical_with_simulator
+from tests.utils import _test_lco_identical_with_simulator
 
 q0, q1, q2, q3, q4 = cirq.LineQubit.range(5)
 rad = sympy.Symbol("rad")
@@ -222,7 +222,7 @@ class OperationGradTest(unittest.TestCase):
         param_resolver = {"rad": random_rad}
         # param_resolver = {"rad": 0}
 
-        test_lco_identical_with_simulator(
+        _test_lco_identical_with_simulator(
             cirq.resolve_parameters(grad, param_resolver),
             cirq.resolve_parameters(grad_lco, param_resolver),
             self
@@ -247,7 +247,7 @@ class OpTreeGeneratorGradTest(unittest.TestCase):
         grad_lco = cirq.resolve_parameters(grad_lco, param_resolver)
         exact_grad_lco = cirq.resolve_parameters(exact_grad_lco, param_resolver)
 
-        test_lco_identical_with_simulator(
+        _test_lco_identical_with_simulator(
             grad_lco,
             exact_grad_lco,
             self
@@ -282,7 +282,7 @@ class OpTreeGeneratorGradTest(unittest.TestCase):
         grad_lco = cirq.resolve_parameters(grad_lco, param_resolver)
         exact_grad_lco = cirq.resolve_parameters(exact_grad_lco, param_resolver)
 
-        test_lco_identical_with_simulator(
+        _test_lco_identical_with_simulator(
             grad_lco,
             exact_grad_lco,
             self

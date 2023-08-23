@@ -39,14 +39,16 @@ class OpTreeGenerator(object):
     def params(self) -> typing.Iterable[sympy.Symbol]:
         pass
 
-    def _resolve_parameters_(self, param_resolver: cirq.ParamResolver):
+    def _resolve_parameters_(
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
+    ):
         class _ParamResolvedGenerator(type(self)):
             def __call__(_self, qubits, **kwargs) -> cirq.OP_TREE:
                 _op_tree = self.__call__(qubits, **kwargs)
                 _resolved_op_tree = cirq.transform_op_tree(
                     _op_tree,
                     op_transformation=(
-                        lambda op: cirq.resolve_parameters(op, param_resolver)
+                        lambda op: cirq.resolve_parameters(op, param_resolver, recursive)
                     )
                 )
 

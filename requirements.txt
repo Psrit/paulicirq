@@ -1,6 +1,20 @@
-cirq==0.8.2
-ddt>=1.4.1
-openfermion>=0.10.0
-mpmath
-tensorflow_quantum==0.4.0
-tensorflow==2.3.1
+# python=3.8
+cirq-core==0.13.1
+cirq-google==0.13.1
+sympy==1.8
+numpy==1.19.5  # TensorFlow can detect if it was built against other versions.
+nbformat==5.9.2
+pylint==2.4.4
+yapf==0.28.0
+tensorflow==2.7.0
+tensorflow-quantum==0.7.2
+# Needed for compatibility with cirq program protos.
+googleapis-common-protos==1.52.0
+google-api-core==1.21.0
+google-auth==1.18.0
+google-api-python-client==1.8.0
+grpcio==1.34.1
+protobuf==3.17.3
+# Needed for paulicirq
+ddt
+openfermion==1.4.0

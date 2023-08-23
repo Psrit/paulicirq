@@ -8,7 +8,7 @@ from cirq import rx, CNOT, H, TOFFOLI
 
 from paulicirq.gates.gate_block import GateBlock
 from paulicirq.op_tree import OpTreeGenerator, VariableNQubitsGenerator
-from tests.utils import test_op_tree_identical_with_simulator
+from tests.utils import _test_op_tree_identical_with_simulator
 
 
 class FixedWidthGenerator3(OpTreeGenerator):
@@ -102,7 +102,7 @@ class GateBlockTest(unittest.TestCase):
         cswap = cirq.CSWAP
         qubits = cirq.LineQubit.range(cswap_block.num_qubits())
 
-        test_op_tree_identical_with_simulator(
+        _test_op_tree_identical_with_simulator(
             cswap_block.on(*qubits),
             cswap.on(*qubits),
             self

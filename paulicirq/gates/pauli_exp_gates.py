@@ -59,9 +59,11 @@ class GlobalPhaseGate(cirq.SingleQubitGate, cirq.EigenGate):
         yield cirq.X.on(qubits[0])
 
     # Necessary for parametrized gate when optimized in an ansatz:
-    def _resolve_parameters_(self, param_resolver: cirq.ParamResolver) -> "GlobalPhaseGate":
+    def _resolve_parameters_(
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
+    ) -> "GlobalPhaseGate":
         return GlobalPhaseGate(
-            rad=param_resolver.value_of(self.rad)
+            rad=param_resolver.value_of(self.rad, recursive)
         )
 
 
@@ -166,11 +168,13 @@ class TwoPauliExpGate(cirq.TwoQubitGate):
             raise ValueError("invalid Pauli {}".format(pauli))
 
     # Necessary for parametrized gate when optimized in an ansatz:
-    def _resolve_parameters_(self, param_resolver: cirq.ParamResolver) -> "PauliWordExpGate":
+    def _resolve_parameters_(
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
+    ) -> "PauliWordExpGate":
         return TwoPauliExpGate(
             pauli0=self.pauli0,
             pauli1=self.pauli1,
-            rad=param_resolver.value_of(self.rad),
+            rad=param_resolver.value_of(self.rad, recursive),
         )
 
 
@@ -247,8 +251,10 @@ class PauliWordExpGate(cirq.Gate):
                 )
 
     # Necessary for parametrized gate when optimized in an ansatz:
-    def _resolve_parameters_(self, param_resolver: cirq.ParamResolver) -> "PauliWordExpGate":
+    def _resolve_parameters_(
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
+    ) -> "PauliWordExpGate":
         return PauliWordExpGate(
-            coefficient=param_resolver.value_of(self.coefficient),
+            coefficient=param_resolver.value_of(self.coefficient, recursive),
             pauli_word=self.pauli_word
         )

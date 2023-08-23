@@ -3,7 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 with open(os.sep.join(
-        [os.path.dirname(os.path.abspath(__file__)), "paulicirq", "_version.py"]
+    [os.path.dirname(os.path.abspath(__file__)), "paulicirq", "_version.py"]
 )) as vfile:
     import re
 
@@ -16,20 +16,26 @@ with open(os.sep.join(
 description = "Toolkit for quantum computing based on Cirq."
 long_description = open("README.md").read()
 
-install_requires = [
-    "cirq==0.5.0",
-    "ddt",
-    "openfermion>=0.10.0",
-    "mpmath"
-    # "openfermioncirq"
-]
+
+def _load_requirements():
+    lines = open("requirements.txt").readlines()
+    terms = []
+    for line in lines:
+        m = re.match(r"(?P<term>[^\s#]*)\s*(?P<comment>#.*)?", line)
+        _term = m.groupdict()["term"].strip()
+        if _term:
+            terms.append(_term)
+    return terms
+
+
+install_requires = _load_requirements()
 
 setup(
 
     name="paulicirq",
     version=__version__,
 
-    author="psrit",
+    author="xiaojx",
     author_email="xiaojx13@outlook.com",
     url="https://github.com/Psrit/paulicirq",
 
@@ -41,7 +47,7 @@ setup(
         "Intended Audience :: Developers",
         "Intended Audience :: Education",
         "Operating System :: Unix",
-        "Programming Language :: Python",
+        "Programming Language :: Python :: 3.8",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
 

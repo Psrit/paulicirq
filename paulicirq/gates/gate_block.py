@@ -30,9 +30,11 @@ class GateBlock(cirq.Gate):
         return cirq.protocols.is_parameterized(_circuit)
 
     # Necessary for parametrized gate when optimized in an ansatz:
-    def _resolve_parameters_(self, param_resolver: cirq.ParamResolver) -> "GateBlock":
+    def _resolve_parameters_(
+        self, param_resolver: cirq.ParamResolver, recursive: bool = True
+    ) -> "GateBlock":
         _resolved_op_generator = cirq.resolve_parameters(
-            self._op_generator, param_resolver
+            self._op_generator, param_resolver, recursive
         )
 
         return GateBlock(_resolved_op_generator, **self._generator_kwargs)
